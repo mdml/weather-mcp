@@ -11,6 +11,8 @@
 
 # --- Agent scratch -----------------------------------------------------------
 .scratch/
+# Ephemeral per-agent git worktrees created by the harness during fanout.
+.claude/worktrees/
 
 # --- OS ----------------------------------------------------------------------
 .DS_Store

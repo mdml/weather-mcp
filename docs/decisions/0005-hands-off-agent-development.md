@@ -69,7 +69,7 @@ test first**, so the rest of the test suite can't be satisfied by mocking away t
   full `just check` stack wired, fixtures + one passing conformance test, Actions CI, a Fly.io
   preview — *before* any weather logic.
 - Requires toolchain: `cargo-nextest`, `cargo-deny`, `cargo-audit`, `insta`, `just`.
-- Deploy touchpoints (Fly.io first-run, later OAuth) remain human-in-loop; Phase 1 local stdio
+- Deploy touchpoints (Fly.io first-run, later OAuth) remain human-in-loop; Phase 2 local stdio
   is fully agent-able.
 
 ## Alternatives considered
