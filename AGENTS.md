@@ -59,9 +59,14 @@ Secrets are managed with [dotenvx](https://dotenvx.com) and **never committed in
 - **`.env.keys`** — the dotenvx decryption keys, plaintext, **gitignored**, **never commit**.
 - A committed, dotenvx-**encrypted** `.env.development` may hold shared config (none yet).
 
-Secrets are loaded into the session environment (via dotenvx) so allowlisted tools (`gh`,
-`git push`) pick up `GH_TOKEN` automatically. **Agents must not** open the raw files (reading
-`.env.*` is denied) or mutate secrets (`dotenvx set`, `just env-set` are human-only). See
+Secrets are consumed **per-command**: wrap the tool that needs one in
+`dotenvx run -f .env.local -- <cmd>` (e.g. `dotenvx run -f .env.local -- git push`,
+`… -- gh pr create`), which decrypts via `.env.keys` and injects the secret into just that
+process — they are **not** loaded into the whole session env. `gh auth setup-git` is configured
+so the wrapped `git push` uses `GH_TOKEN` over HTTPS. Worktree-isolated agents don't have
+`.env.local`/`.env.keys` (gitignored, absent from the worktree), so push/PR steps run from the
+main checkout. **Agents must not** open the raw files (reading `.env.*` is denied) or mutate
+secrets (`dotenvx set`, `just env-set` are human-only). See
 [0007](docs/decisions/0007-secrets-via-dotenvx.md) and
 [DEVELOPMENT.md](docs/guides/DEVELOPMENT.md#secrets-dotenvx).
 
@@ -84,7 +89,7 @@ Secrets are loaded into the session environment (via dotenvx) so allowlisted too
 | `rm -rf`, `rm -r` | Irreversible recursive delete | Remove files individually, or ask |
 | `git push --force` / `-f`, `git reset --hard`, `git clean -f` | Destructive history/working-tree loss | `--force-with-lease` (prompts), or ask |
 | `git commit --no-verify`, `git push --no-verify` | Skips the hooks that exist for a reason | Fix the failing check |
-| Open / mutate `.env.keys`, `.env.local`, `.env.*.local` | Secrets (dotenvx) | Reading is denied; consume via the loaded env (`GH_TOKEN`). Mutation (`dotenvx set`, `just env-set`) is human-only |
+| Open / mutate `.env.keys`, `.env.local`, `.env.*.local` | Secrets (dotenvx) | Reading is denied; consume via `dotenvx run -f .env.local -- <cmd>`. Mutation (`dotenvx set`, `just env-set`) is human-only |
 
 ## Workflow
 
@@ -93,6 +98,10 @@ Secrets are loaded into the session environment (via dotenvx) so allowlisted too
 - **Everything lands via a branch + PR** — `main` is protected (a GitHub ruleset requires a
   pull request + linear history), so there are no direct pushes, even for docs. CI is the real
   merge gate for code; docs PRs merge on review.
+- **Substantial work runs as worktree agents that open PRs**, with a human coordinating: align
+  on scope → do human-only prep (e.g. set secrets) → agents build + self-verify (`just check`) +
+  open a PR → review together → merge → update [now.md](docs/product/now.md). This is the
+  hands-off bet of [0005](docs/decisions/0005-hands-off-agent-development.md) in practice.
 - Commit attribution: this project uses conventional-commit types incl. an `agent` type
   (e.g. `agent(harness): ...`) so the log self-documents who did what. See
   [0005-hands-off-agent-development](docs/decisions/0005-hands-off-agent-development.md).
