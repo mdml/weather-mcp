@@ -29,9 +29,9 @@ answers both the forecast question and the multi-decade trend question.
 
 - **It does both forecast and deep history.** It is the one surveyed source that exposes a
   multi-decade queryable archive (ERA5, 1940→present) *and* a forecast API.
-- **Free + keyless + global.** No key management, no per-call cost, works anywhere. This also
-  simplifies the security posture — there's no secret to store (see
-  [0003](0003-standalone-public-repo.md)).
+- **Free + keyless + global.** No key management, no per-call cost, works anywhere. There's no
+  **data-API** key to store or rotate — the only credentials in play are dev/CI ones like a
+  GitHub token, handled separately via dotenvx ([0007](0007-secrets-via-dotenvx.md)).
 - **Gold-standard underlying models.** It serves ECMWF IFS and DWD ICON among others, and its
   `best_match` auto-selects the best regional model.
 

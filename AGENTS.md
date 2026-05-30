@@ -47,6 +47,21 @@ Both **Claude Code** and **Codex**. Config is committed and hand-maintained (no 
 **Keep the two matrices in sync by hand.** If you add a permission to `.claude/settings.json`,
 add the mirrored `allow(...)`/`forbid(...)` line to `.codex/rules/default.rules`.
 
+## Secrets (dotenvx)
+
+Secrets are managed with [dotenvx](https://dotenvx.com) and **never committed in plaintext**:
+
+- **`.env.local`** — per-user local secrets, dotenvx-**encrypted**, **gitignored**. Holds e.g.
+  `GH_TOKEN` (a GitHub token so `gh` / `git push` work non-interactively).
+- **`.env.keys`** — the dotenvx decryption keys, plaintext, **gitignored**, **never commit**.
+- A committed, dotenvx-**encrypted** `.env.development` may hold shared config (none yet).
+
+Secrets are loaded into the session environment (via dotenvx) so allowlisted tools (`gh`,
+`git push`) pick up `GH_TOKEN` automatically. **Agents must not** open the raw files (reading
+`.env.*` is denied) or mutate secrets (`dotenvx set`, `just env-set` are human-only). See
+[0007](docs/decisions/0007-secrets-via-dotenvx.md) and
+[DEVELOPMENT.md](docs/guides/DEVELOPMENT.md#secrets-dotenvx).
+
 ## Agent conventions
 
 - **Don't chain git commands with `&&`** — run them as separate calls.
@@ -66,7 +81,7 @@ add the mirrored `allow(...)`/`forbid(...)` line to `.codex/rules/default.rules`
 | `rm -rf`, `rm -r` | Irreversible recursive delete | Remove files individually, or ask |
 | `git push --force` / `-f`, `git reset --hard`, `git clean -f` | Destructive history/working-tree loss | `--force-with-lease` (prompts), or ask |
 | `git commit --no-verify`, `git push --no-verify` | Skips the hooks that exist for a reason | Fix the failing check |
-| Read/write `.env.keys`, `.env.local` | Secrets | Never needed for this public repo |
+| Open / mutate `.env.keys`, `.env.local`, `.env.*.local` | Secrets (dotenvx) | Reading is denied; consume via the loaded env (`GH_TOKEN`). Mutation (`dotenvx set`, `just env-set`) is human-only |
 
 ## Workflow
 

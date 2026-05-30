@@ -101,11 +101,22 @@
       "Bash(pushd *)",
       "Bash(popd *)",
       "Bash(git -C *)",
+      "Bash(dotenvx set *)",
+      "Bash(dotenvx unset *)",
+      "Bash(dotenvx encrypt *)",
+      "Bash(dotenvx decrypt *)",
+      "Bash(dotenvx rotate *)",
+      "Bash(just env-set *)",
+      "Bash(just env-local-set *)",
       "Read(.env.keys)",
       "Edit(.env.keys)",
       "Write(.env.keys)",
       "Read(.env.local)",
-      "Read(.env.*.local)"
+      "Edit(.env.local)",
+      "Write(.env.local)",
+      "Read(.env.*.local)",
+      "Edit(.env.*.local)",
+      "Write(.env.*.local)"
     ]
   }
 }

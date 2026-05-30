@@ -83,3 +83,14 @@ forbid("cd", ARGS)
 forbid("pushd", ARGS)
 forbid("popd", ARGS)
 forbid("git", "-C", ARGS)
+
+# Secret mutation is human-only (dotenvx + the env-set just recipes).
+# Note: file-path denies (Read/Write .env.local) are enforced in Claude's
+# .claude/settings.json; Codex's grammar is command-prefix only.
+forbid("dotenvx", "set", ARGS)
+forbid("dotenvx", "unset", ARGS)
+forbid("dotenvx", "encrypt", ARGS)
+forbid("dotenvx", "decrypt", ARGS)
+forbid("dotenvx", "rotate", ARGS)
+forbid("just", "env-set", ARGS)
+forbid("just", "env-local-set", ARGS)

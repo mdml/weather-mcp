@@ -1,0 +1,16 @@
+# --- Secrets (dotenvx) — NEVER commit these ----------------------------------
+# Decryption keys (plaintext) and per-user local secrets. See docs/decisions/
+# 0007-secrets-via-dotenvx.md. A committed, dotenvx-ENCRYPTED .env.development
+# is allowed (not ignored); only the keys and *.local files are ignored.
+.env.keys
+.env.local
+.env.*.local
+
+# --- Rust --------------------------------------------------------------------
+/target/
+
+# --- Agent scratch -----------------------------------------------------------
+.scratch/
+
+# --- OS ----------------------------------------------------------------------
+.DS_Store

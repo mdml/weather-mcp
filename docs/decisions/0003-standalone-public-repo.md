@@ -41,7 +41,9 @@ fold it into an existing private repository, or give it its own standalone repos
 
 ## Consequences
 
-- Public from day one — no private content or secrets may ever land here.
+- Public from day one — no private content, and **no secret ever lands in version control**.
+  Dev/CI secrets (e.g. `GH_TOKEN`) stay out of git, managed locally via dotenvx
+  ([0007](0007-secrets-via-dotenvx.md)).
 - Deployment (Fly.io first-run, later OAuth) is **human-in-loop**, not agent-automated; Phase 1
   (local stdio) is fully agent-able. See [0006](0006-phased-delivery.md).
 - A `LICENSE` file (Apache-2.0) lives at the repo root.
@@ -58,3 +60,4 @@ fold it into an existing private repository, or give it its own standalone repos
 
 - [0005 — Hands-off agent development](0005-hands-off-agent-development.md)
 - [0006 — Phased delivery](0006-phased-delivery.md)
+- [0007 — Secrets via dotenvx](0007-secrets-via-dotenvx.md)

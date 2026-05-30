@@ -55,3 +55,4 @@ These are unsettled and should be resolved before or while the relevant phase is
 - Three-tool surface ([0004](../decisions/0004-minimal-tool-surface.md))
 - Hands-off via verifiers + harness-first ([0005](../decisions/0005-hands-off-agent-development.md))
 - Phased delivery + transport abstraction ([0006](../decisions/0006-phased-delivery.md))
+- Secrets via dotenvx — `GH_TOKEN` in `.env.local` ([0007](../decisions/0007-secrets-via-dotenvx.md))

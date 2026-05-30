@@ -4,16 +4,19 @@
 
 ## State
 
-**Phase 0 — Harness.** The planning docs and agent config are in place (this repo's first
-session). There is **no Rust code yet** — by design ([0005](../decisions/0005-hands-off-agent-development.md):
-build the harness before the weather logic).
+**Phase 0 — Harness.** The planning docs and agent config are in place and pushed to the public
+remote (`github.com/mdml/weather-mcp`). There is **no Rust code yet** — by design
+([0005](../decisions/0005-hands-off-agent-development.md): build the harness before the weather
+logic).
 
 What exists now:
 
-- Decision records: [docs/decisions/](../decisions/) (0001–0006)
+- Decision records: [docs/decisions/](../decisions/) (0001–0007)
 - [Roadmap](roadmap.md) with the phased plan + open questions
-- Guides: [ARCHITECTURE](../guides/ARCHITECTURE.md) (planned layout) · [DEVELOPMENT](../guides/DEVELOPMENT.md) (the verifier bar)
+- Guides: [ARCHITECTURE](../guides/ARCHITECTURE.md) (planned layout) · [DEVELOPMENT](../guides/DEVELOPMENT.md) (the verifier bar + secrets)
 - Agent config: `.claude/settings.json`, `.codex/`, `.mcp.json`, [AGENTS.md](../../AGENTS.md)
+- Secrets via **dotenvx** ([0007](../decisions/0007-secrets-via-dotenvx.md)): `GH_TOKEN` lives
+  in `.env.local` (encrypted, gitignored); `.gitignore` protects `.env.keys` / `.env.local`
 - `README.md`, `LICENSE` (Apache-2.0)
 
 ## Next concrete step — scaffold the skeleton (the build session)
@@ -31,7 +34,9 @@ Target: **green CI on a skeleton.** No real weather logic.
 5. GitHub Actions CI: `fmt` / `clippy -D warnings` / `nextest` / `build` + `cargo-deny` +
    `cargo-audit`.
 6. `Dockerfile` + `fly.toml` scaffold (deploy is human-in-loop; CI builds the image).
-7. `.gitignore`; optional lefthook + commitlint (conventional commits incl. `agent` type).
+7. Extend `.gitignore` (Rust `target/` etc. — secrets already covered); add lefthook
+   (incl. the `env-leak-guard`) + commitlint (conventional commits incl. `agent` type); wire
+   the `just env-set` / `env-local-set` dotenvx recipes ([0007](../decisions/0007-secrets-via-dotenvx.md)).
 
 Then: **Phase 1 proper** — the three real tools ([0004](../decisions/0004-minimal-tool-surface.md))
 against the Forecast + Archive APIs, cribbing shapes from `cmer81/open-meteo-mcp`.

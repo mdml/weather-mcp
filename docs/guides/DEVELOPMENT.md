@@ -8,6 +8,8 @@ It defines the bar an agent grinds against; none of it is code yet.
 - Rust **stable** with `rustfmt` + `clippy` (pinned via `rust-toolchain.toml`).
 - `rmcp` **1.7.0** + `tokio` (the MCP SDK — [0002](../decisions/0002-build-in-rust-with-rmcp.md)).
 - Dev tools: `cargo-nextest`, `cargo-deny`, `cargo-audit`, `insta`, `just`.
+- `dotenvx` for secrets (install the standalone binary — Homebrew `dotenvx/brew/dotenvx`, not
+  the npm package — to keep the repo node-free). See [Secrets](#secrets-dotenvx).
 
 ## `just` recipes (the command surface)
 
@@ -58,6 +60,34 @@ every push:
 - Docker image build; Fly.io preview per branch (deploy is human-in-loop)
 
 The human reviews a green checkmark, not every line.
+
+## Secrets (dotenvx)
+
+The Open-Meteo data API is keyless ([0001](../decisions/0001-data-source-open-meteo.md)), but
+the dev/CI loop still needs credentials — currently a **`GH_TOKEN`** so `gh` / `git push` work
+non-interactively. Secrets are managed with [dotenvx](https://dotenvx.com) and
+[ADR 0007](../decisions/0007-secrets-via-dotenvx.md):
+
+| File | Contents | Committed? |
+|---|---|---|
+| `.env.local` | Per-user secrets (incl. `GH_TOKEN`), dotenvx-**encrypted** | No — gitignored |
+| `.env.keys` | dotenvx decryption keys (plaintext) | **Never** — gitignored |
+| `.env.development` | Shared config, dotenvx-**encrypted** (none yet) | Yes — encrypted, safe |
+
+- **Set a secret (human-only):** `dotenvx set GH_TOKEN <value> -f .env.local` (planned
+  `just env-local-set <key> <value>` wrapper). This encrypts the value in `.env.local`.
+- **Consume:** secrets are loaded into the session environment via dotenvx, so allowlisted
+  tools (`gh`, `git push`) read `GH_TOKEN` from the env. Agents never open the raw files.
+- **Guardrails:**
+  - `.gitignore` excludes `.env.keys` / `.env.local` / `.env.*.local`.
+  - Agent permissions deny **reading and writing** `.env.*` and **mutating** secrets
+    (`dotenvx set/unset/encrypt/decrypt/rotate`, `just env-set`/`env-local-set`) — in
+    `.claude/settings.json`, mirrored as `forbid(...)` in `.codex/rules/default.rules`. Mutation
+    is human-only.
+  - **Planned** lefthook `env-leak-guard`: block committing `.env.keys` or any unencrypted
+    `.env*` (no `DOTENV_PUBLIC_KEY` header).
+- **CI:** GitHub Actions uses its own encrypted **Actions secrets**, not `.env.local`. The
+  built-in `GITHUB_TOKEN` covers most needs; a PAT goes in an Actions secret if required.
 
 ## Conventions
 
