@@ -16,25 +16,28 @@ free verifier loop an agent can self-correct against. See
 
 ## Status
 
-**Early — harness/docs only.** This repo currently contains decision records, a roadmap,
-guides, and the agent config. There is **no Rust code yet** (`Cargo.toml`, `src/`, `justfile`,
-CI, Docker are intentionally not present). The next session scaffolds the skeleton server +
-verifier stack + CI — start at [docs/product/now.md](docs/product/now.md).
+**Phase 1 — Design.** The Phase 0 harness has **landed**
+([#1](https://github.com/mdml/weather-mcp/pull/1)): a skeleton `rmcp` stdio server
+(`Cargo.toml`, `src/`, `justfile`, an MCP conformance test) with green GitHub Actions CI on
+`main`. No real weather logic yet; Docker/Fly + git hooks are deferred follow-ups. Current
+focus is **design before build** — spec the tool interfaces + the future MCP-app UX. Start at
+[docs/product/now.md](docs/product/now.md).
 
-## Architecture (planned)
+## Architecture
 
-A single small crate exposing three tools (`get_forecast`, `get_historical`,
-`compare_period`) over a transport abstraction that starts as stdio and grows to HTTP without
-a rewrite. Built on the official `rmcp` SDK + tokio. See
+A single small crate (`weather-mcp`) over a transport abstraction that starts as stdio and
+grows to HTTP without a rewrite, built on the official `rmcp` SDK + tokio. The Phase 0 skeleton
+exists with one trivial `server_info` tool; the three real tools (`get_forecast`,
+`get_historical`, `compare_period`) arrive in Phase 2. See
 [ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) and
 [0004-minimal-tool-surface](docs/decisions/0004-minimal-tool-surface.md).
 
-## Command surface (planned)
+## Command surface
 
-Not built yet. Once the harness lands, all dev actions go through `just` recipes
-(`just check`, `just test`, `just test-live`, `just mcp-smoke`, `just run`) so agents
-auto-approve them. The exact recipe set is specified in
-[DEVELOPMENT.md](docs/guides/DEVELOPMENT.md). Until then, use `cargo`/`git` directly.
+All dev actions go through `just` recipes (`just check`, `just test`, `just test-live`,
+`just mcp-smoke`, `just run`) so agents auto-approve them (`Bash(just *)` is allowed). The
+recipe set is specified in [DEVELOPMENT.md](docs/guides/DEVELOPMENT.md); `just check` is the
+one-command verifier stack (fmt → clippy `-D warnings` → build → nextest).
 
 ## Supported agents
 
@@ -87,7 +90,9 @@ Secrets are loaded into the session environment (via dotenvx) so allowlisted too
 
 - **Start every session at [docs/product/now.md](docs/product/now.md)** — it's the pointer to
   the current focus and the next concrete step.
-- Code lands on feature branches with green CI (the real gate); docs can go direct to `main`.
+- **Everything lands via a branch + PR** — `main` is protected (a GitHub ruleset requires a
+  pull request + linear history), so there are no direct pushes, even for docs. CI is the real
+  merge gate for code; docs PRs merge on review.
 - Commit attribution: this project uses conventional-commit types incl. an `agent` type
   (e.g. `agent(harness): ...`) so the log self-documents who did what. See
   [0005-hands-off-agent-development](docs/decisions/0005-hands-off-agent-development.md).

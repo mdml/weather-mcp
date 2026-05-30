@@ -1,7 +1,7 @@
 # Architecture (planned)
 
-The intended shape, not yet built. The one constraint that must be designed in from Phase 1:
-a **transport seam** so stdio (Phase 1) → HTTP (Phase 3) doesn't force a rewrite
+The intended shape, not yet built. The one constraint that must be designed in from Phase 2:
+a **transport seam** so stdio (Phase 2) → HTTP (Phase 4) doesn't force a rewrite
 ([0006](../decisions/0006-phased-delivery.md)).
 
 ## Crate layout
@@ -58,7 +58,7 @@ surfaces in `tools/list`). Tool/parameter names and shapes are cribbed from
 
 ## The transport seam
 
-Phase 1 serves over stdio:
+Phase 2 serves over stdio:
 
 ```rust
 let service = WeatherServer::new().serve(stdio()).await?;
@@ -66,7 +66,7 @@ service.waiting().await?;
 ```
 
 Keep the server type (`WeatherServer` + its `#[tool_router]`) **independent of the transport**.
-`rmcp`'s transport is pluggable (`serve(...)` takes any transport), so Phase 3 swaps
+`rmcp`'s transport is pluggable (`serve(...)` takes any transport), so Phase 4 swaps
 `stdio()` for the streamable-HTTP transport and adds the OAuth/JWT layer **without touching the
 tool implementations**. The skeleton (Phase 0) should already prove the stdio path end-to-end
 via the conformance test.

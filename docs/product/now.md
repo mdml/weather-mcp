@@ -4,45 +4,49 @@
 
 ## State
 
-**Phase 0 — Harness.** The planning docs and agent config are in place and pushed to the public
-remote (`github.com/mdml/weather-mcp`). There is **no Rust code yet** — by design
-([0005](../decisions/0005-hands-off-agent-development.md): build the harness before the weather
-logic).
+**Phase 1 — Design.** The Phase 0 harness has landed: a skeleton `rmcp` stdio server with the
+full verifier stack and green CI on `main` ([#1](https://github.com/mdml/weather-mcp/pull/1)).
+Next is **design before build** — spec the tool interfaces and the future MCP-app UX so Phase 2
+is a clean build against frozen specs ([0006](../decisions/0006-phased-delivery.md)).
 
 What exists now:
 
+- **Code:** single crate `weather-mcp` on rmcp 1.7 — stdio server with one trivial `server_info`
+  tool, `justfile` verifier stack (`check`/`test`/`test-live`/`mcp-smoke`/`run`), MCP conformance
+  + `insta` snapshot tests, GitHub Actions CI (`just check` + `cargo-deny`/`cargo-audit`).
 - Decision records: [docs/decisions/](../decisions/) (0001–0007)
 - [Roadmap](roadmap.md) with the phased plan + open questions
-- Guides: [ARCHITECTURE](../guides/ARCHITECTURE.md) (planned layout) · [DEVELOPMENT](../guides/DEVELOPMENT.md) (the verifier bar + secrets)
+- Guides: [ARCHITECTURE](../guides/ARCHITECTURE.md) · [DEVELOPMENT](../guides/DEVELOPMENT.md)
 - Agent config: `.claude/settings.json`, `.codex/`, `.mcp.json`, [AGENTS.md](../../AGENTS.md)
-- Secrets via **dotenvx** ([0007](../decisions/0007-secrets-via-dotenvx.md)): `GH_TOKEN` lives
-  in `.env.local` (encrypted, gitignored); `.gitignore` protects `.env.keys` / `.env.local`
-- `README.md`, `LICENSE` (Apache-2.0)
+- Secrets via **dotenvx** ([0007](../decisions/0007-secrets-via-dotenvx.md)): `GH_TOKEN` in
+  `.env.local` (encrypted, gitignored), consumed per-command via `dotenvx run -f .env.local -- …`
 
-## Next concrete step — scaffold the skeleton (the build session)
+**Deferred Phase-0 follow-ups** (cheap, do when needed): the Docker/Fly preview deploy and the
+lefthook/commitlint + dotenvx `just` recipes.
 
-Target: **green CI on a skeleton.** No real weather logic.
+## Next concrete step — Phase 1 design (the design session)
 
-1. `cargo` project + `rust-toolchain.toml` (stable, with `rustfmt` + `clippy`); pin `rmcp`
-   1.7.0 + `tokio`. Single small crate (see [ARCHITECTURE](../guides/ARCHITECTURE.md)).
-2. Skeleton `rmcp` stdio server with **one trivial tool** (e.g. `ping` / `server_info`) using
-   the 1.x `#[tool_router]` / `#[tool]` / `#[tool_handler]` macros + `serve(stdio())`.
-3. The `justfile` verifier stack: `check`, `test`, `test-live`, `mcp-smoke`, `run`
-   (spec in [DEVELOPMENT](../guides/DEVELOPMENT.md)).
-4. Fixtures dir + **one passing MCP conformance test** (spawn over stdio; `initialize` →
-   `tools/list` → `tools/call`).
-5. GitHub Actions CI: `fmt` / `clippy -D warnings` / `nextest` / `build` + `cargo-deny` +
-   `cargo-audit`.
-6. `Dockerfile` + `fly.toml` scaffold (deploy is human-in-loop; CI builds the image).
-7. Extend `.gitignore` (Rust `target/` etc. — secrets already covered); add lefthook
-   (incl. the `env-leak-guard`) + commitlint (conventional commits incl. `agent` type); wire
-   the `just env-set` / `env-local-set` dotenvx recipes ([0007](../decisions/0007-secrets-via-dotenvx.md)).
+Human-led design, no fanout. Produce design files (under `docs/design/`) that freeze the
+contracts Phase 2 builds against:
 
-Then: **Phase 1 proper** — the three real tools ([0004](../decisions/0004-minimal-tool-surface.md))
-against the Forecast + Archive APIs, cribbing shapes from `cmer81/open-meteo-mcp`.
+1. **Tool interface specs** for `get_forecast`, `get_historical`, `compare_period`
+   ([0004](../decisions/0004-minimal-tool-surface.md)) — request params, output JSON shapes,
+   units, error model. Crib parameter shapes from `cmer81/open-meteo-mcp` and the Open-Meteo
+   Forecast + Archive API docs.
+2. **MCP-app specs** for the future trend-chart / anomaly view (Phase 3) — what it renders and
+   which tool outputs feed it, designed now so the Phase 2 outputs are app-ready.
+3. **Resolve the [open questions](roadmap.md#open-questions)** as part of the specs: the `vars`
+   set, `compare_period` baseline + stats, default-location handling, archive
+   rate-limits/caching.
+
+Then: **Phase 2 — build the three tools** against the frozen specs. The parallel build fanout
+returns here — one agent per tool, grinding `just check` green → PR.
 
 ## Decisions still open
 
-See [roadmap.md § Open questions](roadmap.md#open-questions) — `vars` set, `compare_period`
-baseline + stats, location handling, archive rate-limits/caching, and the two
-MCP-App-rendering verifications gating Phase 2/3.
+See [roadmap.md § Open questions](roadmap.md#open-questions) — resolved in Phase 1 design, plus
+the two MCP-App-rendering verifications gating Phases 3/4.
+
+> Note: a few source-comment phase references in the merged skeleton still say the old numbering
+> (e.g. "Phase 1" for the tools, "Phase 3" for HTTP); those get corrected in the first Phase 2
+> code PR, which rewrites those stub files anyway.
