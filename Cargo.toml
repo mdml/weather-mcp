@@ -1,0 +1,33 @@
+[package]
+name = "weather-mcp"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.85"
+description = "MCP server wrapping the Open-Meteo API (forecast + historical trends)."
+license = "Apache-2.0"
+repository = "https://github.com/mdml/weather-mcp"
+publish = false
+
+[[bin]]
+name = "weather-mcp"
+path = "src/main.rs"
+
+[dependencies]
+# Official Rust MCP SDK, pinned to the 1.7 line (ADR 0002). Phase 0 only needs the
+# server macros + stdio transport; the client + child-process transport are pulled in
+# for the conformance test (see [dev-dependencies]).
+rmcp = { version = "1.7", features = ["server", "macros", "transport-io"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "io-std", "signal"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "std"] }
+
+[dev-dependencies]
+# Client side of the MCP conformance test: spawn the built binary as a child process
+# and script a real stdio session against it.
+rmcp = { version = "1.7", features = ["client", "transport-child-process"] }
+insta = { version = "1", features = ["json", "redactions"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "process", "io-util"] }
