@@ -76,8 +76,11 @@ non-interactively. Secrets are managed with [dotenvx](https://dotenvx.com) and
 
 - **Set a secret (human-only):** `dotenvx set GH_TOKEN <value> -f .env.local` (planned
   `just env-local-set <key> <value>` wrapper). This encrypts the value in `.env.local`.
-- **Consume:** secrets are loaded into the session environment via dotenvx, so allowlisted
-  tools (`gh`, `git push`) read `GH_TOKEN` from the env. Agents never open the raw files.
+- **Consume (per-command):** wrap the command in `dotenvx run -f .env.local -- <cmd>` (e.g.
+  `… -- git push`, `… -- gh pr create`); dotenvx injects the secret into that one process, not
+  the whole session. Run `gh auth setup-git` once so the wrapped `git push` uses `GH_TOKEN` over
+  HTTPS. Agents never open the raw files; worktree-isolated agents have no `.env.*` (gitignored),
+  so push/PR runs from the main checkout.
 - **Guardrails:**
   - `.gitignore` excludes `.env.keys` / `.env.local` / `.env.*.local`.
   - Agent permissions deny **reading and writing** `.env.*` and **mutating** secrets

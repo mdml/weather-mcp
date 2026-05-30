@@ -27,8 +27,12 @@ Manage secrets with **[dotenvx](https://dotenvx.com)** (encrypted-at-rest `.env`
 
 - **Mutation is human-only:** `dotenvx set GH_TOKEN <value> -f .env.local` (planned
   `just env-local-set` wrapper) encrypts the value in place.
-- **Consumption:** secrets are loaded into the session environment via dotenvx so allowlisted
-  tools (`gh`, `git push`) pick up `GH_TOKEN` from the env. **Agents never open the raw files.**
+- **Consumption (per-command):** wrap the tool that needs a secret in
+  `dotenvx run -f .env.local -- <cmd>` (e.g. `… -- git push`, `… -- gh pr create`); dotenvx
+  decrypts via `.env.keys` and injects the secret into that one process — *not* the whole
+  session. Run `gh auth setup-git` once so the wrapped `git push` uses `GH_TOKEN` over HTTPS.
+  **Agents never open the raw files**, and worktree-isolated agents (no `.env.*` in the
+  worktree) defer the push/PR step to the main checkout.
 - **Tooling:** install the **standalone** dotenvx binary (Homebrew `dotenvx/brew/dotenvx`), not
   the npm package — keeps this repo node-free ([0002](0002-build-in-rust-with-rmcp.md)).
 - **CI:** GitHub Actions uses its own encrypted **Actions secrets** (and the built-in
