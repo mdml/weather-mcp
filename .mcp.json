@@ -1,0 +1,4 @@
+{
+  "_comment": "Repo-level MCP server registry (committed, hand-maintained). Empty for now. Add dev-support servers here, or wire the weather server itself once it exists to dogfood it from this repo's agents. See docs/decisions/0005-hands-off-agent-development.md.",
+  "mcpServers": {}
+}

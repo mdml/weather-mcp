@@ -1,0 +1,21 @@
+# Codex runtime config for weather-mcp (committed, hand-maintained).
+# Mirrors the Claude permission posture in .claude/settings.json; the
+# allow/forbid command matrix lives in .codex/rules/default.rules.
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+# Kept off by default (conservative). This repo is a network API wrapper, so
+# `cargo` fetches and the live Open-Meteo smoke test need network — Codex will
+# ask on-request. If those prompts get noisy, flip this to `true` (safe here:
+# public repo, no secrets / no private content).
+network_access = false
+exclude_tmpdir_env_var = false
+exclude_slash_tmp = false
+
+# No MCP servers wired yet. To register one for Codex, add:
+#   [mcp_servers.<name>]
+#   default_tools_approval_mode = "auto"
+#   command = "..."
+#   args = ["..."]
