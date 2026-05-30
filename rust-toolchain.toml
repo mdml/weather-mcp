@@ -1,0 +1,5 @@
+# Pin the toolchain so every agent + CI run grinds against the same verifier.
+# Stable channel with the components the verifier stack needs (rustfmt, clippy).
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
