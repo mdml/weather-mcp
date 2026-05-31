@@ -29,7 +29,8 @@ Spec the interfaces *before* building — human-led, no fanout. Produces design 
 
 This phase resolves the [open questions](#open-questions) below. Freezing the specs turns
 Phase 2 into a clean agent-grind against a known bar, and is where the parallel build fanout
-gets its frozen contracts.
+gets its frozen contracts. **The specs are now frozen:**
+[tool-specs](../design/tool-specs.md) + [app-spec](../design/app-spec.md).
 
 ### Phase 2 — Data-only Rust MCP (stdio)
 
@@ -50,17 +51,26 @@ Claude mobile actually renders MCP App UI resources (not just calls tools).
 
 ## Open questions
 
-These are unsettled and are resolved in **Phase 1 — Design** (or while the relevant phase is
-built):
+The Phase 1 design questions are **resolved** — frozen in [tool-specs](../design/tool-specs.md):
 
-- **Variables (`vars`)** — beyond precipitation + temperature, which? (snow, wind, humidity?)
-- **`compare_period` baseline** — trailing N years, or a 30-year climate normal? And which
-  summary stats — mean, anomaly vs. baseline, percentile rank?
-- **Default-location handling** — pass `lat`/`lon` on every call, or add a small place→coords
-  resolver / saved home location?
-- **Archive API rate limits + caching** — how to stay within limits and avoid re-fetching the
-  same historical windows.
-- **CCD renders MCP App UI?** (Phase 3 gate) — verify empirically with a trivial MCP App.
+- ~~**Variables**~~ → split model: a richer fixed `get_forecast` payload (incl. humidity) vs a
+  curated `temperature` / `precipitation` / `snowfall` / `wind` enum for the historical/compare
+  path ([tool-specs §1.4](../design/tool-specs.md#14-the-curated-variable-set)).
+- ~~**`compare_period` baseline + stats**~~ → baseline is **any year range ≥ 1940** (default the
+  WMO 1991–2020 normal; widen to e.g. 1950→present for the long-trend view) — a *fixed* window by
+  default because a trailing one drifts with the warming, but not constrained to it; stats =
+  anomaly (abs/%), standardized anomaly (σ), percentile rank, per-year distribution array
+  ([tool-specs §4](../design/tool-specs.md#4-compare_period--the-differentiator)).
+- ~~**Location handling**~~ → `location` name (geocoded) *or* `lat`/`lon`, resolved place echoed
+  in output; saved-home deferred ([tool-specs §1.1](../design/tool-specs.md#11-location--name-or-coordinates)).
+- ~~**Archive rate limits + caching**~~ → whole baseline window in one request (~2–3 calls/compare,
+  far under the free limits); caching deferred behind the client seam
+  ([tool-specs §4.6](../design/tool-specs.md#46-api-call-budget--caching)).
+
+Still open — **empirical, verified during the relevant phase** (not design calls):
+
+- **CCD renders MCP App UI?** (Phase 3 gate) — verify with a trivial MCP App before building the
+  trend view.
 - **Claude mobile renders MCP App UI resources?** (Phase 4 go/no-go) — or does it only call
   tools?
 
@@ -74,3 +84,4 @@ built):
 - Phased delivery + transport abstraction ([0006](../decisions/0006-phased-delivery.md))
 - Secrets via dotenvx — `GH_TOKEN` in `.env.local` ([0007](../decisions/0007-secrets-via-dotenvx.md))
 - **Phase 0 harness landed** — skeleton server + verifier stack + green CI ([#1](https://github.com/mdml/weather-mcp/pull/1))
+- **Phase 1 design frozen** — tool + app contracts ([tool-specs](../design/tool-specs.md), [app-spec](../design/app-spec.md)); variable split, climate-normal baseline, location handling all settled

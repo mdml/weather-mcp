@@ -3,6 +3,15 @@
 **Date:** 2026-05-30
 **Status:** active
 
+> **Amended 2026-05-30 (Phase 1 design):** the parameter open questions below are **resolved**
+> and frozen in [docs/design/tool-specs.md](../design/tool-specs.md). Two refinements worth
+> recording: (1) the **variable set is split** — `get_forecast` returns a richer near-term
+> payload (incl. humidity), while the historical/compare path uses a curated
+> `temperature`/`precipitation`/`snowfall`/`wind` enum; (2) the `compare_period` baseline is a
+> **fixed climate normal** (default WMO 1991–2020), *not* the "past decade" the decision below
+> phrases it as — a trailing window drifts with the warming climate and hides the trend. The
+> three-tool surface itself is unchanged (geocoding is resolved internally, not a fourth tool).
+
 ## Context
 
 The best-maintained reference server (`cmer81/open-meteo-mcp`) mirrors essentially the entire
@@ -41,13 +50,13 @@ Crib parameter names and shapes from `cmer81/open-meteo-mcp` (and the lean
 
 ## Consequences
 
-- Several parameters are **open questions** to settle before/while implementing
-  ([roadmap](../product/roadmap.md)):
-  - **`vars`** — which variables beyond precipitation + temperature (snow, wind, humidity)?
-  - **`compare_period` baseline** — trailing N years, or a 30-year climate normal? Which
-    summary stats (mean, anomaly, percentile rank)?
-  - **Location handling** — pass `lat`/`lon` every call, or add a place→coords resolver / saved
-    home location?
+- Several parameters were **open questions**, now **resolved** in Phase 1 design and frozen in
+  [docs/design/tool-specs.md](../design/tool-specs.md) (see the amendment above):
+  - **`vars`** → curated `temperature`/`precipitation`/`snowfall`/`wind` enum for history/compare;
+    richer fixed payload for forecast.
+  - **`compare_period` baseline** → fixed climate normal (default 1991–2020); stats = anomaly
+    (abs/%), standardized anomaly, percentile rank, per-year distribution.
+  - **Location handling** → `location` name (geocoded) *or* `lat`/`lon`, resolved place echoed.
 - Tool output shapes are pinned by `insta` snapshot tests; the MCP conformance test exercises
   `tools/list` + `tools/call` against the real surface ([0005](0005-hands-off-agent-development.md)).
 
