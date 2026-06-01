@@ -6,7 +6,7 @@
 > revise it as we dogfood. Changing a request param or output field is a deliberate spec change
 > (amend this doc + the snapshots together), not silent drift from code.
 > See [0004](../decisions/0004-minimal-tool-surface.md) · [0006](../decisions/0006-phased-delivery.md) ·
-> [ARCHITECTURE](../guides/ARCHITECTURE.md) · [app-spec](app-spec.md).
+> [ARCHITECTURE](../guides/ARCHITECTURE.md) · [app-spec](app-spec.md) · [test-plan](test-plan.md).
 
 ### Design stance — flexible defaults over premature precision
 

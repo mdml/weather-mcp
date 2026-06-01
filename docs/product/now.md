@@ -15,9 +15,10 @@ What exists now:
 - **Code:** single crate `weather-mcp` on rmcp 1.7 — stdio server with one trivial `server_info`
   tool, `justfile` verifier stack (`check`/`test`/`test-live`/`mcp-smoke`/`run`), MCP conformance
   + `insta` snapshot tests, GitHub Actions CI (`just check` + `cargo-deny`/`cargo-audit`).
-- **Design specs (frozen):** [tool-specs](../design/tool-specs.md) (the 3-tool contract Phase 2
-  builds against) + [app-spec](../design/app-spec.md) (the Phase 3 trend/anomaly view + the
-  output shape it requires)
+- **Design specs (frozen):** [tool-specs](../design/tool-specs.md) (the 3-tool contract) +
+  [app-spec](../design/app-spec.md) (the Phase 3 forecast + trend views and the output shapes
+  they need) + [test-plan](../design/test-plan.md) (the Phase 2 coverage bar, enumerable now
+  because the spec is frozen)
 - Decision records: [docs/decisions/](../decisions/) (0001–0007)
 - [Roadmap](roadmap.md) with the phased plan + open questions
 - Guides: [ARCHITECTURE](../guides/ARCHITECTURE.md) · [DEVELOPMENT](../guides/DEVELOPMENT.md)
@@ -39,11 +40,14 @@ Forecast + ERA5 Archive APIs:
 3. **`compare_period`** — the differentiator: climate-normal anomaly aggregation, pure +
    fixture-tested in `compare.rs` ([tool-specs §4](../design/tool-specs.md#4-compare_period--the-differentiator)).
 
-Plus the shared client/scaffolding: the `openmeteo/` client (forecast + archive + geocoding),
-the location/units/error conventions ([tool-specs §1](../design/tool-specs.md#1-shared-conventions)),
-fixtures, and snapshots that pin the frozen output shapes. The parallel build fanout — one agent
-per tool over a shared client — grinds `just check` green → PR. Sequencing (shared client first,
-or stub-and-parallelize) is the next thing to decide when we open Phase 2.
+Plus the shared client/scaffolding: the `openmeteo/` client (forecast + archive + geocoding)
+behind a fixture-testable trait seam, the location/units/error conventions
+([tool-specs §1](../design/tool-specs.md#1-shared-conventions)), fixtures, and snapshots that pin
+the frozen output shapes. The build is **test-first** — the [test-plan](../design/test-plan.md)
+defines the coverage bar (every spec clause → a test) and the sequencing: seam + conformance
+skeleton first, then `compare.rs` unit tests, then tool snapshots, then the real HTTP client +
+`test-live`. That makes the fanout clean: one agent builds the shared seam, then one agent per
+tool grinds its slice of the checklist `just check`-green → PR.
 
 ## Decisions still open
 

@@ -38,6 +38,10 @@ allowed). Planned set:
 
 ## Testing strategy — mock the outermost boundary, not collaborators
 
+> The concrete, per-tool expansion of this strategy — the fixture inventory, the
+> spec-clause→test checklist, and the test-first build order — lives in
+> [docs/design/test-plan.md](../design/test-plan.md) (the Phase 2 coverage bar).
+
 - **Fixtures:** record real Open-Meteo responses (forecast + archive) and commit them. Run all
   parsing/aggregation against the fixtures — offline and deterministic. This is the bulk of
   `cargo nextest run`.

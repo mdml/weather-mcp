@@ -35,12 +35,16 @@ gets its frozen contracts. **The specs are now frozen:**
 ### Phase 2 — Data-only Rust MCP (stdio)
 
 The three real tools built to the Phase 1 specs, against the Open-Meteo Forecast + ERA5 Archive
-APIs. Claude draws charts on demand from the JSON. Works in Claude Desktop / CCD today.
+APIs, **test-first** against the [test-plan](../design/test-plan.md) coverage bar (every spec
+clause → a test; un-mockable conformance + live tests first). Claude draws charts on demand from
+the JSON. Works in Claude Desktop / CCD today.
 
 ### Phase 3 — MCP App UI components
 
-Interactive trend chart / anomaly view via the `create-mcp-app` skill +
-`@modelcontextprotocol/ext-apps` (a Node/Vite HTML bundle served by the Rust server).
+Two views ([app-spec](../design/app-spec.md)) via the `create-mcp-app` skill +
+`@modelcontextprotocol/ext-apps` (a Node/Vite HTML bundle served by the Rust server): the
+**everyday forecast view** (Apple-Weather-style current + N-day list — the common case) and the
+**trend / anomaly view** (the differentiator). Both feed off the Phase 2 outputs unchanged.
 **Gate:** first deploy a trivial MCP App and confirm CCD renders it inline before investing.
 
 ### Phase 4 — Fly.io + OAuth → mobile
