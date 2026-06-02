@@ -1,0 +1,322 @@
+---
+source: tests/conformance.rs
+expression: result.structured_content
+---
+{
+  "baseline": {
+    "end_year": 2020,
+    "n_years": 30,
+    "reference": "1991-2020",
+    "start_year": 1991
+  },
+  "comparisons": [
+    {
+      "aggregation": "mean",
+      "anomaly": {
+        "absolute": 0.2311783971028203,
+        "percent": 6.552430592963038,
+        "percentile_rank": 56.666666666666664,
+        "rank": "14th-warmest of 31",
+        "standardized": 0.18655388273219276
+      },
+      "baseline": {
+        "max": 6.173287671232877,
+        "mean": 3.528131947724767,
+        "min": 0.9275862068965524,
+        "stddev": 1.2392044256440815,
+        "values": [
+          {
+            "value": 5.299999999999999,
+            "year": 1991
+          },
+          {
+            "value": 3.033561643835616,
+            "year": 1992
+          },
+          {
+            "value": 2.528275862068966,
+            "year": 1993
+          },
+          {
+            "value": 1.8331034482758624,
+            "year": 1994
+          },
+          {
+            "value": 3.7579310344827586,
+            "year": 1995
+          },
+          {
+            "value": 2.5808219178082195,
+            "year": 1996
+          },
+          {
+            "value": 3.310344827586207,
+            "year": 1997
+          },
+          {
+            "value": 5.07655172413793,
+            "year": 1998
+          },
+          {
+            "value": 4.14896551724138,
+            "year": 1999
+          },
+          {
+            "value": 3.8328767123287673,
+            "year": 2000
+          },
+          {
+            "value": 2.964827586206896,
+            "year": 2001
+          },
+          {
+            "value": 5.053103448275862,
+            "year": 2002
+          },
+          {
+            "value": 0.9275862068965524,
+            "year": 2003
+          },
+          {
+            "value": 2.6082191780821904,
+            "year": 2004
+          },
+          {
+            "value": 1.9448275862068976,
+            "year": 2005
+          },
+          {
+            "value": 4.435172413793103,
+            "year": 2006
+          },
+          {
+            "value": 3.073793103448275,
+            "year": 2007
+          },
+          {
+            "value": 3.9034246575342455,
+            "year": 2008
+          },
+          {
+            "value": 3.0565517241379307,
+            "year": 2009
+          },
+          {
+            "value": 5.006896551724138,
+            "year": 2010
+          },
+          {
+            "value": 2.7427586206896555,
+            "year": 2011
+          },
+          {
+            "value": 6.173287671232877,
+            "year": 2012
+          },
+          {
+            "value": 3.532413793103449,
+            "year": 2013
+          },
+          {
+            "value": 2.1034482758620685,
+            "year": 2014
+          },
+          {
+            "value": 1.3151724137931031,
+            "year": 2015
+          },
+          {
+            "value": 4.414383561643836,
+            "year": 2016
+          },
+          {
+            "value": 4.700689655172414,
+            "year": 2017
+          },
+          {
+            "value": 4.100689655172412,
+            "year": 2018
+          },
+          {
+            "value": 3.604827586206897,
+            "year": 2019
+          },
+          {
+            "value": 4.779452054794519,
+            "year": 2020
+          }
+        ]
+      },
+      "period_value": 3.759310344827587,
+      "unit": "°C",
+      "variable": "temperature"
+    },
+    {
+      "aggregation": "sum",
+      "anomaly": {
+        "absolute": -84.66666666666674,
+        "percent": -18.268124280782523,
+        "percentile_rank": 16.666666666666668,
+        "rank": "26th-wettest of 31",
+        "standardized": -0.9565782177913864
+      },
+      "baseline": {
+        "max": 657.7999999999998,
+        "mean": 463.4666666666667,
+        "min": 306.2000000000001,
+        "stddev": 88.50992536935554,
+        "values": [
+          {
+            "value": 359.40000000000003,
+            "year": 1991
+          },
+          {
+            "value": 309.1,
+            "year": 1992
+          },
+          {
+            "value": 466.0999999999999,
+            "year": 1993
+          },
+          {
+            "value": 591.6000000000001,
+            "year": 1994
+          },
+          {
+            "value": 306.2000000000001,
+            "year": 1995
+          },
+          {
+            "value": 575.3000000000002,
+            "year": 1996
+          },
+          {
+            "value": 494.1,
+            "year": 1997
+          },
+          {
+            "value": 599.1000000000001,
+            "year": 1998
+          },
+          {
+            "value": 420.1000000000002,
+            "year": 1999
+          },
+          {
+            "value": 437.1000000000001,
+            "year": 2000
+          },
+          {
+            "value": 455.9,
+            "year": 2001
+          },
+          {
+            "value": 436.99999999999994,
+            "year": 2002
+          },
+          {
+            "value": 469.89999999999986,
+            "year": 2003
+          },
+          {
+            "value": 378.2999999999999,
+            "year": 2004
+          },
+          {
+            "value": 539.4,
+            "year": 2005
+          },
+          {
+            "value": 441.8000000000001,
+            "year": 2006
+          },
+          {
+            "value": 554.8000000000001,
+            "year": 2007
+          },
+          {
+            "value": 530.2999999999998,
+            "year": 2008
+          },
+          {
+            "value": 403.6,
+            "year": 2009
+          },
+          {
+            "value": 657.7999999999998,
+            "year": 2010
+          },
+          {
+            "value": 489.10000000000014,
+            "year": 2011
+          },
+          {
+            "value": 316.50000000000006,
+            "year": 2012
+          },
+          {
+            "value": 425.1000000000001,
+            "year": 2013
+          },
+          {
+            "value": 464.1000000000002,
+            "year": 2014
+          },
+          {
+            "value": 390.00000000000006,
+            "year": 2015
+          },
+          {
+            "value": 384.2000000000001,
+            "year": 2016
+          },
+          {
+            "value": 511.4,
+            "year": 2017
+          },
+          {
+            "value": 584.1000000000003,
+            "year": 2018
+          },
+          {
+            "value": 500.9,
+            "year": 2019
+          },
+          {
+            "value": 411.69999999999993,
+            "year": 2020
+          }
+        ]
+      },
+      "period_value": 378.8,
+      "unit": "mm",
+      "variable": "precipitation"
+    }
+  ],
+  "location": {
+    "admin1": "Massachusetts",
+    "country": "United States",
+    "country_code": "US",
+    "elevation": 19.0,
+    "latitude": 42.35843,
+    "longitude": -71.05977,
+    "name": "Boston",
+    "source": "geocoded",
+    "timezone": "America/New_York"
+  },
+  "notes": [
+    "Multiple matches for \"Boston\"; using Boston, Massachusetts. Alternatives: Boston, New York; Boston, Georgia; Brilliant, Alabama.",
+    "Feb 29 is included only in leap years; baseline day-counts vary."
+  ],
+  "period": {
+    "end": "2026-05-25",
+    "start": "2026-01-01",
+    "window": "01-01..05-25"
+  },
+  "series": null,
+  "units": {
+    "precipitation": "mm",
+    "temperature": "°C",
+    "wind_speed": "km/h"
+  }
+}
