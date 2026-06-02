@@ -55,8 +55,24 @@ pub struct RawArchiveDaily {
 /// Parse an Archive API body into [`ArchiveData`] (deserialize [`RawArchive`], reshape).
 ///
 /// Phase 3 fills this in; the §3.2 deserialize test pins it.
-pub fn parse_archive(_body: &str) -> Result<ArchiveData, WeatherError> {
-    todo!("Phase 3: RawArchive -> ArchiveData (test-plan §3.2)")
+pub fn parse_archive(body: &str) -> Result<ArchiveData, WeatherError> {
+    let raw: RawArchive = serde_json::from_str(body).map_err(|e| {
+        WeatherError::new(
+            crate::types::ErrorCode::UpstreamError,
+            format!("failed to parse archive response: {e}"),
+        )
+    })?;
+
+    Ok(ArchiveData {
+        latitude: raw.latitude,
+        longitude: raw.longitude,
+        elevation: raw.elevation,
+        timezone: raw.timezone,
+        daily: ArchiveDaily {
+            time: raw.daily.time,
+            columns: raw.daily.columns,
+        },
+    })
 }
 
 /// Slice a parsed [`ArchiveData`] to the inclusive `[start, end]` `YYYY-MM-DD` window, preserving
@@ -65,6 +81,24 @@ pub fn parse_archive(_body: &str) -> Result<ArchiveData, WeatherError> {
 /// wide fetch (§4.6).
 ///
 /// Phase 3 fills this in; the §3.1 calendar-window tests pin it.
-pub fn slice_archive(_data: &ArchiveData, _start: &str, _end: &str) -> ArchiveData {
-    todo!("Phase 3: inclusive date-window slice preserving alignment (test-plan §3.1)")
+pub fn slice_archive(data: &ArchiveData, start: &str, end: &str) -> ArchiveData {
+    let keep: Vec<usize> = data
+        .daily
+        .time
+        .iter()
+        .enumerate()
+        .filter(|(_, d)| d.as_str() >= start && d.as_str() <= end)
+        .map(|(i, _)| i)
+        .collect();
+    let time = keep.iter().map(|&i| data.daily.time[i].clone()).collect();
+    let columns = data
+        .daily
+        .columns
+        .iter()
+        .map(|(k, v)| (k.clone(), keep.iter().map(|&i| v[i]).collect()))
+        .collect();
+    ArchiveData {
+        daily: ArchiveDaily { time, columns },
+        ..data.clone()
+    }
 }
