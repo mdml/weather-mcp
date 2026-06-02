@@ -1,8 +1,8 @@
 //! Location resolution (test-plan §3.3).
 //!
-//! The geocode hits are loaded independently of the stubbed `parse_geocode`. `resolve_geocoded`
-//! and `parse_location_input` are the stubbed decision logic (red until Phase 3);
-//! `location_from_coordinates` is a pure constructor (green now).
+//! The geocode hits are loaded independently of `parse_geocode`. `resolve_geocoded`
+//! and `parse_location_input` are the decision logic under test;
+//! `location_from_coordinates` is a pure constructor.
 
 mod common;
 

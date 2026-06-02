@@ -1,9 +1,9 @@
 //! Parsing + error mapping (test-plan §3.2).
 //!
-//! Split by design: deserializing the fixtures into the **wire** structs needs no logic, so those
-//! tests are green now (they prove the structs match real Open-Meteo JSON). The `parse_*` mapping
-//! into domain types, the WMO decode through parsing, and the HTTP error mapping are the
-//! **stubbed** logic — red until Phase 3. Unit-label/param mapping is pure data and green now.
+//! Split by design: deserializing the fixtures into the **wire** structs needs no logic (those
+//! tests prove the structs match real Open-Meteo JSON). The `parse_*` mapping into domain types,
+//! the WMO decode through parsing, and the HTTP error mapping are the logic these exercise.
+//! Unit-label/param mapping is pure data.
 
 mod common;
 
@@ -98,7 +98,7 @@ fn units_map_to_params_and_labels() {
     );
 }
 
-// ---- parse_* into domain types (red until Phase 3) --------------------------------------------
+// ---- parse_* into domain types -----------------------------------------------------------------
 
 #[test]
 fn parse_forecast_maps_current_and_daily() {
@@ -141,7 +141,7 @@ fn parse_geocode_maps_hits_and_empty() {
     assert!(empty.is_empty());
 }
 
-// ---- HTTP error mapping (red until Phase 3, §1.5) ---------------------------------------------
+// ---- HTTP error mapping (§1.5) ----------------------------------------------------------------
 
 #[test]
 fn map_http_error_rate_limited() {

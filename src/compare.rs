@@ -6,7 +6,7 @@
 //! day-by-day series (§4.5). No I/O — fully testable offline against fixtures, with expected
 //! numbers from an *independent* oracle (test-plan §3.1).
 //!
-//! The [`compare`] entry point is stubbed in Phase 2; the §3.1 hand-asserted tests are the bar.
+//! The §3.1 hand-asserted tests pin the [`compare`] entry point.
 
 use std::collections::BTreeMap;
 

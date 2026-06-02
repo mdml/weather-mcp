@@ -2,8 +2,8 @@
 //!
 //! Hand-asserted against an **independent oracle**: the expected numbers were computed with `jq`
 //! over the same fixture (a throwaway calc, not the impl), and the inputs are built by
-//! [`common`] without going through the stubbed parse/slice. Today these are **red** (`compare`
-//! is `todo!()`); Phase 3 turns them green.
+//! [`common`] without going through the production parse/slice — keeping the oracle independent
+//! of the code under test.
 //!
 //! Conventions pinned here (and recorded in tool-specs §4.4): population stddev; `percentile_rank`
 //! = % of baseline years strictly below the period; `rank` = position among baseline + period,

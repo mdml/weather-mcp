@@ -1,10 +1,10 @@
 //! Real HTTP [`WeatherData`] against the live Open-Meteo endpoints (Appendix A).
 //!
 //! This is the **only** network-touching code and the **only** thing `just test-live` exercises
-//! (test-plan §3.6). It is deliberately the *last* thing built: Phase 3 fills it in behind the
-//! now-proven seam, adding the HTTP client dependency, building the request URLs from the queries,
-//! mapping transport failures to `upstream_unavailable` and non-2xx responses via
-//! [`crate::openmeteo::map_http_error`], then delegating to the same `parse_*` functions the
+//! (test-plan §3.6). It was deliberately the *last* thing built, behind the now-proven seam: it
+//! adds the HTTP client dependency, builds the request URLs from the queries, maps transport
+//! failures to `upstream_unavailable` and non-2xx responses via
+//! [`crate::openmeteo::map_http_error`], then delegates to the same `parse_*` functions the
 //! fixture client uses.
 
 use crate::openmeteo::{

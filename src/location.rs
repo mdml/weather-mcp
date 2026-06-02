@@ -3,7 +3,7 @@
 //! Splits into a param-validation step ([`parse_location_input`], the exactly-one-of rule) and a
 //! resolution step ([`resolve_geocoded`], top-by-population pick + ambiguity note). The geocoding
 //! I/O itself lives behind [`crate::openmeteo::WeatherData`]; everything here is pure and
-//! fixture-testable. The decision logic is stubbed in Phase 2; the §3.3 tests are the red bar.
+//! fixture-testable. The §3.3 tests pin the decision logic.
 
 use crate::openmeteo::GeoHit;
 use crate::types::{Location, LocationSource, Notes, WeatherError};
@@ -20,7 +20,7 @@ pub enum LocationInput {
 /// Validate the location params: **exactly one** of `location` vs `latitude`+`longitude` (§1.1).
 /// Supplying neither, both, or only one coordinate is `invalid_request`.
 ///
-/// Phase 3 fills this in; the §3.3 invalid_request test pins it.
+/// The §3.3 invalid_request test pins it.
 pub fn parse_location_input(
     location: Option<String>,
     latitude: Option<f64>,
@@ -45,7 +45,7 @@ pub fn parse_location_input(
 /// zero hits → `location_not_found`; otherwise the top result by population wins, and when more
 /// than one strong match exists the alternatives are listed in `notes` (non-fatal).
 ///
-/// Phase 3 fills this in; the §3.3 pick/ambiguity/not-found tests pin it.
+/// The §3.3 pick/ambiguity/not-found tests pin it.
 pub fn resolve_geocoded(
     hits: &[GeoHit],
     query_name: &str,

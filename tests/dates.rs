@@ -1,4 +1,4 @@
-//! Date guards + ERA5-lag clamp (test-plan §3.4 date guards, §1.7). Red until Phase 3.
+//! Date guards + ERA5-lag clamp (test-plan §3.4 date guards, §1.7).
 
 use weather_mcp::dates::{clamp_end_to_archive, validate_date_range};
 use weather_mcp::types::ErrorCode;
