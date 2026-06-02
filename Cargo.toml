@@ -36,6 +36,10 @@ anyhow = "1"
 async-trait = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "std"] }
+# The real Open-Meteo HTTP client (openmeteo::http::HttpClient). rustls (not OpenSSL/native-tls)
+# keeps the license + build surface small; we parse bodies ourselves as text, so the `json`
+# feature is deliberately omitted. `default-features = false` drops the default native-tls stack.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 
 [dev-dependencies]
 # Client side of the MCP conformance test: spawn the built binary as a child process
