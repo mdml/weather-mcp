@@ -26,7 +26,8 @@ use serde::{Deserialize, Serialize};
 use crate::compare::{self, ComparePayload, CompareSpec};
 use crate::dates::{clamp_end_to_archive, validate_date_range};
 use crate::location::{
-    location_from_coordinates, parse_location_input, resolve_geocoded, LocationInput,
+    location_from_coordinates, parse_location_input, parse_place_query, resolve_geocoded,
+    LocationInput,
 };
 use crate::openmeteo::{
     archive::ArchiveDaily,
@@ -272,8 +273,12 @@ impl WeatherServer {
     ) -> Result<ResolvedLocation, WeatherError> {
         match parse_location_input(location, latitude, longitude)? {
             LocationInput::Name(name) => {
-                let hits = self.client.geocode(&name, 10).await?;
-                let (location, notes) = resolve_geocoded(&hits, &name)?;
+                // Open-Meteo's geocoder ignores a `", ST"`/`", Country"` qualifier and returns zero
+                // results for the full string, so split it: query the bare name, disambiguate the
+                // hits with the qualifier client-side (§1.1).
+                let pq = parse_place_query(&name);
+                let hits = self.client.geocode(&pq.name, 10).await?;
+                let (location, notes) = resolve_geocoded(&hits, &pq.name, pq.admin.as_deref())?;
                 Ok(ResolvedLocation::Geocoded { location, notes })
             }
             LocationInput::Coordinates {
