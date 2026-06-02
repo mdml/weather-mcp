@@ -1,112 +1,143 @@
-//! MCP conformance test — the verifier that can't be gamed with mocks (ADR 0005).
+//! MCP conformance — the verifier that can't be gamed with mocks (ADR 0005, test-plan §3.5).
 //!
-//! Spawns the **built `weather-mcp` binary** as a child process and scripts a real MCP
-//! client session over stdio: `initialize` -> `tools/list` -> `tools/call(server_info)`.
-//! Also pins the `tools/list` shape and the `server_info` result JSON with `insta`
-//! snapshots so accidental schema/output drift trips the verifier.
+//! Spawns the **built `weather-mcp` binary** as a child process, with the fixture-backed client
+//! selected via `WEATHER_MCP_FIXTURES`, and scripts a real MCP client session over stdio.
+//!
+//! Phase 2 status: `initialize` and `tools/list` (names + schemas) are **live and green** — the
+//! three tools are registered and their request schemas are pinned by snapshot. The `tools/call`
+//! paths are **red** (the handlers return a "not implemented (Phase 3)" protocol error, so the
+//! call fails cleanly rather than crashing the child); Phase 3 turns them green and the result
+//! snapshots get generated + accepted then. This also covers the §3.4 handler-snapshot scaffolds.
 
 use rmcp::{
     model::CallToolRequestParams,
     transport::{ConfigureCommandExt, TokioChildProcess},
     ServiceExt,
 };
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use tokio::process::Command;
 
-/// Absolute path to the freshly-built test binary, injected by Cargo/nextest.
 const SERVER_BIN: &str = env!("CARGO_BIN_EXE_weather-mcp");
 
-/// Spawn the server as a child process and connect a client (this also performs the MCP
-/// `initialize` handshake).
+/// Absolute path to the committed fixtures, handed to the child via env.
+fn fixtures_dir() -> String {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Spawn the server (fixture-backed) and connect a client (performs the `initialize` handshake).
 async fn connect() -> anyhow::Result<rmcp::service::RunningService<rmcp::RoleClient, ()>> {
+    let fixtures = fixtures_dir();
     let transport = TokioChildProcess::new(Command::new(SERVER_BIN).configure(|cmd| {
-        // Quiet logs; stderr stays out of the stdout MCP channel regardless.
         cmd.env("RUST_LOG", "warn");
+        cmd.env("WEATHER_MCP_FIXTURES", &fixtures);
     }))?;
-    let client = ().serve(transport).await?;
-    Ok(client)
+    Ok(().serve(transport).await?)
+}
+
+fn args(value: Value) -> Map<String, Value> {
+    value.as_object().expect("args object").clone()
 }
 
 #[tokio::test]
 async fn initialize_reports_server_identity() -> anyhow::Result<()> {
     let client = connect().await?;
-
-    // `peer_info()` is the server's `initialize` response.
     let info = client
         .peer_info()
         .expect("server must report info after initialize");
     assert_eq!(info.server_info.name, "weather-mcp");
     assert!(
         info.capabilities.tools.is_some(),
-        "server must advertise the tools capability"
+        "tools capability advertised"
     );
-
     client.cancel().await?;
     Ok(())
 }
 
 #[tokio::test]
-async fn tools_list_contains_server_info() -> anyhow::Result<()> {
+async fn tools_list_is_exactly_the_three_weather_tools() -> anyhow::Result<()> {
     let client = connect().await?;
-
     let tools = client.list_tools(Default::default()).await?;
-    let names: Vec<&str> = tools.tools.iter().map(|t| t.name.as_ref()).collect();
+
+    let mut names: Vec<&str> = tools.tools.iter().map(|t| t.name.as_ref()).collect();
+    names.sort_unstable();
     assert_eq!(
         names,
-        vec!["server_info"],
-        "Phase 0 exposes exactly the server_info tool"
+        vec!["compare_period", "get_forecast", "get_historical"],
+        "exactly the three weather tools"
     );
 
-    // Snapshot the tool's public shape (name + description + input schema). Pinning this
-    // catches accidental changes to the advertised tool surface.
-    let tool = &tools.tools[0];
-    let shape = json!({
-        "name": tool.name,
-        "description": tool.description,
-        "input_schema": tool.input_schema,
-    });
-    insta::assert_json_snapshot!("tools_list_server_info", shape);
+    // Snapshot the published shape (name + description + input schema) of all three, sorted for
+    // determinism. Pinning this catches accidental drift of the advertised tool contract.
+    let mut shapes: Vec<Value> = tools
+        .tools
+        .iter()
+        .map(|t| {
+            json!({
+                "name": t.name,
+                "description": t.description,
+                "input_schema": t.input_schema,
+            })
+        })
+        .collect();
+    shapes.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
+    insta::assert_json_snapshot!("tools_list", shapes);
 
     client.cancel().await?;
     Ok(())
 }
 
+// ---- tools/call each tool end-to-end against the fixture client (red until Phase 3) -----------
+
 #[tokio::test]
-async fn call_server_info_returns_static_identity() -> anyhow::Result<()> {
+async fn call_get_forecast_returns_success() -> anyhow::Result<()> {
     let client = connect().await?;
-
     let result = client
-        .call_tool(CallToolRequestParams::new("server_info"))
-        .await?;
-
-    assert_ne!(result.is_error, Some(true), "server_info must not error");
-
-    // The result content is a single JSON block; parse it back and assert the identity,
-    // then snapshot the exact JSON shape.
-    let content = result
-        .content
-        .first()
-        .expect("server_info returns one content block");
-    let text = content
-        .as_text()
-        .expect("server_info content is text-encoded JSON");
-    let parsed: Value = serde_json::from_str(&text.text)?;
-
-    assert_eq!(parsed["name"], "weather-mcp");
-    assert_eq!(
-        parsed["description"],
-        Value::String(
-            "MCP server wrapping the Open-Meteo API (forecast + historical trends).".to_string(),
+        .call_tool(
+            CallToolRequestParams::new("get_forecast")
+                .with_arguments(args(json!({ "location": "Boston", "forecast_days": 7 }))),
         )
-    );
-    assert!(parsed["version"].is_string());
+        .await?;
+    assert_ne!(result.is_error, Some(true), "get_forecast should succeed");
+    insta::assert_json_snapshot!("call_get_forecast", result.structured_content);
+    client.cancel().await?;
+    Ok(())
+}
 
-    insta::assert_json_snapshot!("server_info_result", parsed, {
-        // Version tracks the crate version and will bump over time — redact so the
-        // snapshot pins the shape, not the exact number.
-        ".version" => "[version]"
-    });
+#[tokio::test]
+async fn call_get_historical_returns_success() -> anyhow::Result<()> {
+    let client = connect().await?;
+    let result = client
+        .call_tool(
+            CallToolRequestParams::new("get_historical").with_arguments(args(json!({
+                "location": "Boston",
+                "start_date": "2020-01-01",
+                "end_date": "2020-12-31"
+            }))),
+        )
+        .await?;
+    assert_ne!(result.is_error, Some(true), "get_historical should succeed");
+    insta::assert_json_snapshot!("call_get_historical", result.structured_content);
+    client.cancel().await?;
+    Ok(())
+}
 
+#[tokio::test]
+async fn call_compare_period_returns_success() -> anyhow::Result<()> {
+    let client = connect().await?;
+    let result = client
+        .call_tool(
+            CallToolRequestParams::new("compare_period").with_arguments(args(json!({
+                "location": "Boston",
+                "period": { "start": "2026-01-01", "end": "2026-05-25" }
+            }))),
+        )
+        .await?;
+    assert_ne!(result.is_error, Some(true), "compare_period should succeed");
+    insta::assert_json_snapshot!("call_compare_period", result.structured_content);
     client.cancel().await?;
     Ok(())
 }

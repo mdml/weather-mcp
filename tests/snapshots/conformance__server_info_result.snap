@@ -1,9 +1,0 @@
----
-source: tests/conformance.rs
-expression: parsed
----
-{
-  "description": "MCP server wrapping the Open-Meteo API (forecast + historical trends).",
-  "name": "weather-mcp",
-  "version": "[version]"
-}

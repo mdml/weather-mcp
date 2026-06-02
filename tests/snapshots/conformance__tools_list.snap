@@ -1,0 +1,273 @@
+---
+source: tests/conformance.rs
+expression: shapes
+---
+[
+  {
+    "description": "Compare a period of interest against a climate baseline using calendar-window matching: returns the period aggregate, the per-year baseline distribution, and anomaly scores (absolute, percent, z-score, percentile, rank).",
+    "input_schema": {
+      "$defs": {
+        "Period": {
+          "description": "A `YYYY-MM-DD` start/end window of interest (§4.3).",
+          "properties": {
+            "end": {
+              "type": "string"
+            },
+            "start": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "type": "object"
+        },
+        "Units": {
+          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.",
+          "oneOf": [
+            {
+              "const": "metric",
+              "description": "°C · mm · km/h.",
+              "type": "string"
+            },
+            {
+              "const": "imperial",
+              "description": "°F · inch · mph.",
+              "type": "string"
+            }
+          ]
+        },
+        "Variable": {
+          "description": "The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).\n`get_forecast` is intentionally *not* limited to this set.",
+          "enum": [
+            "temperature",
+            "precipitation",
+            "snowfall",
+            "wind"
+          ],
+          "type": "string"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "description": "`compare_period` request (§4.3).",
+      "properties": {
+        "baseline_end_year": {
+          "default": 2020,
+          "description": "≥ 1940 (§4.1).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "baseline_start_year": {
+          "default": 1991,
+          "description": "≥ 1940 (§4.1).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "include_series": {
+          "default": false,
+          "description": "Adds the day-by-day series for the time-series view (§4.5).",
+          "type": "boolean"
+        },
+        "latitude": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "location": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "longitude": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "period": {
+          "$ref": "#/$defs/Period"
+        },
+        "units": {
+          "$ref": "#/$defs/Units",
+          "default": "metric"
+        },
+        "variables": {
+          "default": [
+            "temperature",
+            "precipitation"
+          ],
+          "items": {
+            "$ref": "#/$defs/Variable"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "period"
+      ],
+      "title": "CompareRequest",
+      "type": "object"
+    },
+    "name": "compare_period"
+  },
+  {
+    "description": "Current conditions and an N-day daily forecast for a location (by name or coordinates). Returns current weather plus a chart-friendly daily series.",
+    "input_schema": {
+      "$defs": {
+        "Units": {
+          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.",
+          "oneOf": [
+            {
+              "const": "metric",
+              "description": "°C · mm · km/h.",
+              "type": "string"
+            },
+            {
+              "const": "imperial",
+              "description": "°F · inch · mph.",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "description": "`get_forecast` request (§2). Exactly one of `location` vs `latitude`+`longitude` (§1.1).",
+      "properties": {
+        "forecast_days": {
+          "default": 7,
+          "description": "1–16; Open-Meteo max is 16.",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "latitude": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "location": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "longitude": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "units": {
+          "$ref": "#/$defs/Units",
+          "default": "metric"
+        }
+      },
+      "title": "ForecastRequest",
+      "type": "object"
+    },
+    "name": "get_forecast"
+  },
+  {
+    "description": "The daily historical weather record (ERA5) for an explicit date window: temperature, precipitation, snowfall, and/or wind for the requested variables.",
+    "input_schema": {
+      "$defs": {
+        "Units": {
+          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.",
+          "oneOf": [
+            {
+              "const": "metric",
+              "description": "°C · mm · km/h.",
+              "type": "string"
+            },
+            {
+              "const": "imperial",
+              "description": "°F · inch · mph.",
+              "type": "string"
+            }
+          ]
+        },
+        "Variable": {
+          "description": "The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).\n`get_forecast` is intentionally *not* limited to this set.",
+          "enum": [
+            "temperature",
+            "precipitation",
+            "snowfall",
+            "wind"
+          ],
+          "type": "string"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "description": "`get_historical` request (§3).",
+      "properties": {
+        "end_date": {
+          "description": "`YYYY-MM-DD`, clamped per the ERA5 lag (§1.7).",
+          "type": "string"
+        },
+        "latitude": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "location": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "longitude": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "start_date": {
+          "description": "`YYYY-MM-DD`, ≥ 1940-01-01.",
+          "type": "string"
+        },
+        "units": {
+          "$ref": "#/$defs/Units",
+          "default": "metric"
+        },
+        "variables": {
+          "default": [
+            "temperature",
+            "precipitation"
+          ],
+          "items": {
+            "$ref": "#/$defs/Variable"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "start_date",
+        "end_date"
+      ],
+      "title": "HistoricalRequest",
+      "type": "object"
+    },
+    "name": "get_historical"
+  }
+]

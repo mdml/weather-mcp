@@ -4,18 +4,21 @@
 
 ## State
 
-**Phase 1 — Design (complete) → Phase 2 next.** The Phase 0 harness landed
-([#1](https://github.com/mdml/weather-mcp/pull/1)) and the **design specs are now frozen**: the
-three tool contracts, the app UX, and the test plan are pinned in [docs/design/](../design/), with
-the roadmap's open questions resolved. Next is **Phase 2 — set the test harness + executable
-bar** against those specs, so Phase 3 (the implementation) is a hands-off red→green grind
+**Phase 2 — the executable bar is authored (red) → Phase 3 next.** The Phase 0 harness landed
+([#1](https://github.com/mdml/weather-mcp/pull/1)), the design specs are frozen
+([docs/design/](../design/)), and now the **Phase 2 red bar is in review**: the fixtures, the
+`WeatherData` seam + full type surface (logic stubbed `todo!()`), and the hand-asserted tests
+that encode the specs. `just check` is **green at fmt/clippy/build and red at exactly the
+unimplemented logic** — the reviewable bar. Next is **Phase 3 — the hands-off red→green grind**
 ([0006](../decisions/0006-phased-delivery.md), [0005](../decisions/0005-hands-off-agent-development.md)).
 
 What exists now:
 
-- **Code:** single crate `weather-mcp` on rmcp 1.7 — stdio server with one trivial `server_info`
-  tool, `justfile` verifier stack (`check`/`test`/`test-live`/`mcp-smoke`/`run`), MCP conformance
-  + `insta` snapshot tests, GitHub Actions CI (`just check` + `cargo-deny`/`cargo-audit`).
+- **Code:** single crate `weather-mcp` (lib + bin) on rmcp 1.7 — stdio server exposing the three
+  real tools (`get_forecast`/`get_historical`/`compare_period`) whose **logic is stubbed**
+  (`todo!()`) behind the `WeatherData` seam; `justfile` verifier stack
+  (`check`/`test`/`test-live`/`mcp-smoke`/`run`), MCP conformance + `insta` snapshot tests,
+  GitHub Actions CI (`just check` + `cargo-deny`/`cargo-audit`).
 - **Design specs (frozen):** [tool-specs](../design/tool-specs.md) (the 3-tool contract) +
   [app-spec](../design/app-spec.md) (the Phase 4 forecast + trend views and the output shapes
   they need) + [test-plan](../design/test-plan.md) (the Phase 2 coverage bar, enumerable now
@@ -30,25 +33,24 @@ What exists now:
 **Deferred Phase-0 follow-ups** (cheap, do when needed): the Docker/Fly preview deploy and the
 lefthook/commitlint + dotenvx `just` recipes.
 
-## Next concrete step — Phase 2: set the executable bar
+## Next concrete step — Phase 3: make the bar green (hands-off grind)
 
-Write the verifier bar against the frozen specs *before* implementing, so Phase 3 is a clean
-red→green grind. Per the [test-plan](../design/test-plan.md), Phase 2 delivers:
+The Phase 2 bar is authored and under review (the branch `agent/phase-2-test-bar`). It delivered:
 
-1. **Fixtures** — record real Open-Meteo forecast / archive / geocode responses (+ crafted error
-   & edge fixtures) into `tests/fixtures/` ([test-plan §2](../design/test-plan.md#2-fixtures-testsfixtures)).
-2. **Type surface + the `WeatherData` trait seam** as stubs (`todo!()`) — enough for tests to
-   *compile* ([test-plan §1](../design/test-plan.md#1-the-test-seam--why-no-http-mock-is-needed)).
-3. **The hand-asserted tests** that encode the specs — above all the pure `compare.rs`
-   aggregation, with expected numbers from an *independent* oracle (a throwaway calc over the same
-   fixture, not the impl) — plus parsing, location, error-mapping; extend the MCP conformance
-   test to assert the three tools; scaffold the `insta` snapshot functions
-   ([test-plan §3](../design/test-plan.md#3-the-coverage-checklist--spec-clause--test)).
+1. **Fixtures** recorded into `tests/fixtures/` (Boston forecast / wide 1991–2026 archive /
+   geocode + empty) plus a [`RECORDING.md`](../../tests/fixtures/RECORDING.md) capture recipe; the
+   `temperature_2m_mean` verify-at-build flag is **resolved** (present on Archive).
+2. **Type surface + the `WeatherData` seam** as a `lib` (`types`/`wmo`/`location`/`dates`/`compare`/
+   `openmeteo`), with a real fixture-backed client and the pure logic stubbed `todo!()`.
+3. **The hand-asserted tests** encoding the specs — the `compare.rs` oracle (numbers from an
+   independent `jq` calc), parsing + error-mapping, location, date guards, and the conformance
+   session asserting the three tools (`tools/list` green; `tools/call` red until Phase 3).
 
-The deliverable is a **well-defined red `just check`** — the bar a human reviews once (this is
-where human attention concentrates). Then **Phase 3** is the hands-off fanout: one agent builds
-the shared seam, one per tool fills in the pure logic until `just check` is green and the
-snapshots are accepted → PR.
+Phase 3 fills the pure logic behind the seam until `just check` is green and the `insta`
+snapshots (the three `tools/call` results) are generated + accepted. The grind is parallelizable:
+one slice per module — `openmeteo` parse/error-mapping + `dates`, `location`, `compare`, then the
+handler wiring in `server.rs` + the real `HttpClient`/`test-live` last
+([0006](../decisions/0006-phased-delivery.md)). Each `todo!()` names its test-plan clause.
 
 ## Decisions still open
 
@@ -57,6 +59,5 @@ on paper (see [roadmap.md § Open questions](roadmap.md#open-questions)): does C
 App inline (Phase 4 gate), and does Claude mobile render MCP App UI resources at all (Phase 5
 go/no-go). All Phase 1 design questions are resolved in the frozen specs.
 
-> Note: source-comment phase references in the merged skeleton still use the old numbering
-> (e.g. "Phase 1" for the tools, "Phase 3" for HTTP) and predate this split; they get corrected
-> in the first Phase 2 code PR, which rewrites those stub files anyway.
+> The stale source-comment phase numbering from the Phase 0 skeleton is **resolved**: this PR
+> rewrote those stub files, so comments now reference Phase 2 (the bar) / Phase 3 (the grind).
