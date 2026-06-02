@@ -122,8 +122,31 @@ pub struct RawGeoHit {
 /// `upstream_error`.
 ///
 /// Phase 3 fills this in; the §3.2/§3.3 tests pin it.
-pub fn parse_geocode(_body: &str) -> Result<Vec<GeoHit>, WeatherError> {
-    todo!("Phase 3: deserialize RawGeocode and map hits into GeoHit (test-plan §3.2/§3.3)")
+pub fn parse_geocode(body: &str) -> Result<Vec<GeoHit>, WeatherError> {
+    let raw: RawGeocode = serde_json::from_str(body).map_err(|e| {
+        WeatherError::new(
+            crate::types::ErrorCode::UpstreamError,
+            format!("failed to parse geocode response: {e}"),
+        )
+    })?;
+
+    Ok(raw
+        .results
+        .unwrap_or_default()
+        .into_iter()
+        .map(|h| GeoHit {
+            name: h.name,
+            admin1: h.admin1,
+            country: h.country,
+            country_code: h.country_code,
+            latitude: h.latitude,
+            longitude: h.longitude,
+            elevation: h.elevation,
+            timezone: h.timezone,
+            population: h.population,
+            feature_code: h.feature_code,
+        })
+        .collect())
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -136,6 +159,26 @@ pub fn parse_geocode(_body: &str) -> Result<Vec<GeoHit>, WeatherError> {
 ///
 /// Network failures / timeouts map to `upstream_unavailable` at the call site (see
 /// [`http::HttpClient`]), not here. Phase 3 fills this in; the §3.2 tests pin it.
-pub fn map_http_error(_status: u16, _body: &str) -> WeatherError {
-    todo!("Phase 3: map 429/5xx/error-body to ErrorCode (test-plan §3.2)")
+pub fn map_http_error(status: u16, body: &str) -> WeatherError {
+    use crate::types::ErrorCode;
+
+    if status == 429 {
+        return WeatherError::new(
+            ErrorCode::UpstreamRateLimited,
+            "Open-Meteo rate limit exceeded (HTTP 429)",
+        );
+    }
+
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(body) {
+        if value.get("error").and_then(serde_json::Value::as_bool) == Some(true) {
+            if let Some(reason) = value.get("reason").and_then(serde_json::Value::as_str) {
+                return WeatherError::new(ErrorCode::UpstreamError, reason);
+            }
+        }
+    }
+
+    WeatherError::new(
+        ErrorCode::UpstreamError,
+        format!("Open-Meteo returned HTTP {status}"),
+    )
 }
