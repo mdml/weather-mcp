@@ -16,38 +16,49 @@ logic. Landed in [#1](https://github.com/mdml/weather-mcp/pull/1).
 **Deferred to follow-ups** (cheap, do when needed): the Docker/Fly preview deploy and the
 lefthook/commitlint + dotenvx `just` recipes (the old now.md items 6–7).
 
-### Phase 1 — Design (now)
+### Phase 1 — Design (done)
 
-Spec the interfaces *before* building — human-led, no fanout. Produces design files (under
-`docs/design/`) that freeze the contracts Phase 2 builds against:
+Spec the interfaces *before* building — human-led, no fanout. Produced design files (under
+`docs/design/`) that freeze the contracts the build grinds against:
 
 - **Tool interface specs** for `get_forecast`, `get_historical`, `compare_period`
   ([0004](../decisions/0004-minimal-tool-surface.md)): request params, output JSON shapes,
   units, error model — cribbing parameter shapes from `cmer81/open-meteo-mcp`.
-- **MCP-app specs** for the future trend-chart / anomaly view (Phase 3), designed now so the
-  Phase 2 tool outputs are shaped to feed them.
+- **MCP-app specs** for the everyday forecast view + the trend/anomaly view (Phase 4), designed
+  now so the tool outputs are shaped to feed them.
 
-This phase resolves the [open questions](#open-questions) below. Freezing the specs turns
-Phase 2 into a clean agent-grind against a known bar, and is where the parallel build fanout
-gets its frozen contracts. **The specs are now frozen:**
-[tool-specs](../design/tool-specs.md) + [app-spec](../design/app-spec.md).
+This phase resolved the [open questions](#open-questions) below. Freezing the specs turns the
+build (Phases 2–3) into a clean agent-grind against a known bar. **The specs are now frozen:**
+[tool-specs](../design/tool-specs.md) + [app-spec](../design/app-spec.md) +
+[test-plan](../design/test-plan.md).
 
-### Phase 2 — Data-only Rust MCP (stdio)
+### Phase 2 — Test harness + executable bar (now)
 
-The three real tools built to the Phase 1 specs, against the Open-Meteo Forecast + ERA5 Archive
-APIs, **test-first** against the [test-plan](../design/test-plan.md) coverage bar (every spec
-clause → a test; un-mockable conformance + live tests first). Claude draws charts on demand from
-the JSON. Works in Claude Desktop / CCD today.
+Set the verifier bar against the frozen Phase 1 specs *before* implementing, so Phase 3 is a
+clean red→green grind ([0005](../decisions/0005-hands-off-agent-development.md),
+[test-plan](../design/test-plan.md)): record the Open-Meteo fixtures; define the tool type
+surface + the `WeatherData` client trait seam as stubs; write the hand-asserted tests encoding
+the specs (esp. the pure `compare.rs` aggregation, against an independent oracle); extend the MCP
+conformance test to the three tools; scaffold the `insta` snapshot functions. Result: a
+well-defined *red* `just check` — **the bar a human reviews once.** This is where human attention
+concentrates; the `insta` snapshots themselves are *accepted* in Phase 3, not hand-authored here.
 
-### Phase 3 — MCP App UI components
+### Phase 3 — Tool implementation (the hands-off grind)
+
+Fill in the pure logic behind the seam until `just check` is green and snapshots are accepted —
+the maximally hands-off fanout (one agent per tool/module). The three real tools against the
+Open-Meteo Forecast + ERA5 Archive APIs. Claude draws charts on demand from the JSON. Works in
+Claude Desktop / CCD today.
+
+### Phase 4 — MCP App UI components
 
 Two views ([app-spec](../design/app-spec.md)) via the `create-mcp-app` skill +
 `@modelcontextprotocol/ext-apps` (a Node/Vite HTML bundle served by the Rust server): the
 **everyday forecast view** (Apple-Weather-style current + N-day list — the common case) and the
-**trend / anomaly view** (the differentiator). Both feed off the Phase 2 outputs unchanged.
+**trend / anomaly view** (the differentiator). Both feed off the Phase 3 outputs unchanged.
 **Gate:** first deploy a trivial MCP App and confirm CCD renders it inline before investing.
 
-### Phase 4 — Fly.io + OAuth → mobile
+### Phase 5 — Fly.io + OAuth → mobile
 
 Remote, OAuth-authenticated server (discovery + protected-resource metadata + JWT validation)
 so Claude mobile can reach it — the real game-changer. Real infra lift. **Gate:** confirm
@@ -73,9 +84,9 @@ The Phase 1 design questions are **resolved** — frozen in [tool-specs](../desi
 
 Still open — **empirical, verified during the relevant phase** (not design calls):
 
-- **CCD renders MCP App UI?** (Phase 3 gate) — verify with a trivial MCP App before building the
-  trend view.
-- **Claude mobile renders MCP App UI resources?** (Phase 4 go/no-go) — or does it only call
+- **CCD renders MCP App UI?** (Phase 4 gate) — verify with a trivial MCP App before building the
+  forecast / trend views.
+- **Claude mobile renders MCP App UI resources?** (Phase 5 go/no-go) — or does it only call
   tools?
 
 ## Done / decided

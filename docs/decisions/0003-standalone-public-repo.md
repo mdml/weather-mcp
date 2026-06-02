@@ -15,7 +15,7 @@ fold it into an existing private repository, or give it its own standalone repos
 - **Its own standalone, public GitHub repository** — not folded into any larger or private
   codebase.
 - **License: Apache-2.0** (matches the `rmcp` SDK's license; explicit patent grant).
-- **Hosting: Fly.io** (deferred to Phase 4 — see [0006](0006-phased-delivery.md)).
+- **Hosting: Fly.io** (deferred to Phase 5 — see [0006](0006-phased-delivery.md)).
 - **CI: GitHub Actions** (free for public repos) as the real merge gate — see
   [0005](0005-hands-off-agent-development.md).
 
@@ -35,7 +35,7 @@ fold it into an existing private repository, or give it its own standalone repos
 
 ## Why Fly.io (not a self-hosted box)
 
-- A self-contained, reproducible deploy story for an open-source project. Phase 4's remote +
+- A self-contained, reproducible deploy story for an open-source project. Phase 5's remote +
   OAuth server (the path to Claude mobile) is the real infra lift; a managed platform keeps that
   story portable and reproducible for anyone, rather than tied to bespoke infrastructure.
 
@@ -44,8 +44,8 @@ fold it into an existing private repository, or give it its own standalone repos
 - Public from day one — no private content, and **no secret ever lands in version control**.
   Dev/CI secrets (e.g. `GH_TOKEN`) stay out of git, managed locally via dotenvx
   ([0007](0007-secrets-via-dotenvx.md)).
-- Deployment (Fly.io first-run, later OAuth) is **human-in-loop**, not agent-automated; Phase 2
-  (local stdio) is fully agent-able. See [0006](0006-phased-delivery.md).
+- Deployment (Fly.io first-run, later OAuth) is **human-in-loop**, not agent-automated; the
+  local-stdio build (Phases 2–3) is fully agent-able. See [0006](0006-phased-delivery.md).
 - A `LICENSE` file (Apache-2.0) lives at the repo root.
 
 ## Alternatives considered

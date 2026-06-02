@@ -8,15 +8,16 @@ weather app exposes.
 
 > **Status: early — design frozen, build next.** The repo holds the design (decision records,
 > roadmap, guides, and now the [frozen tool + app specs](docs/design/)) plus the agent config.
-> **No Rust weather logic yet, by design** — the harness and the specs come before the features;
-> Phase 2 builds the three tools against those specs. See [docs/product/now.md](docs/product/now.md).
+> **No Rust weather logic yet, by design** — the harness and the specs come before the features:
+> Phase 2 sets the test bar against the specs, then Phase 3 builds the tools red→green. See
+> [docs/product/now.md](docs/product/now.md).
 
 ## Read this first
 
 - [AGENTS.md](AGENTS.md) — how agents (Claude Code + Codex) work in this repo
 - [docs/product/now.md](docs/product/now.md) — current focus + the next concrete step
 - [docs/product/roadmap.md](docs/product/roadmap.md) — phased plan + open questions
-- [docs/design/](docs/design/) — the frozen tool + app contracts Phase 2 builds against
+- [docs/design/](docs/design/) — the frozen tool + app contracts + test plan the build grinds against
 - [docs/guides/ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) — planned crate layout + transport seam
 - [docs/guides/DEVELOPMENT.md](docs/guides/DEVELOPMENT.md) — the verifier bar (`just check`, CI, tests)
 - [docs/decisions/](docs/decisions/) — why it's shaped this way (ADRs 0001–0007)

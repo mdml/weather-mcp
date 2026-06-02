@@ -1,7 +1,7 @@
-# App spec — Phase 3 views (forecast + trend)
+# App spec — Phase 4 views (forecast + trend)
 
-> **Status: frozen-enough (Phase 1).** These views are *built* in Phase 3, but they're
-> **specified now** for one reason: so the Phase 2 tool outputs are already shaped to feed them
+> **Status: frozen-enough (Phase 1).** These views are *built* in Phase 4, but they're
+> **specified now** for one reason: so the Phase 3 tool outputs are already shaped to feed them
 > without a rewrite. The contract this doc pins is the **data contract** (which fields each view
 > reads); the visual details can still move, the data shapes should not.
 > See [tool-specs](tool-specs.md) · [roadmap](../product/roadmap.md) · [0006](../decisions/0006-phased-delivery.md).
@@ -15,8 +15,8 @@
 
 The forecast view is what people reach for most — a polished, glanceable forecast is table
 stakes, and the bar is set by apps like Apple Weather. The trend view is the thing no consumer
-app does. **Both are Phase 3**, both gated on the same render check below; neither requires a
-Phase 2 tool-output change (validated in each view's data contract).
+app does. **Both are Phase 4**, both gated on the same render check below; neither requires a
+Phase 3 tool-output change (validated in each view's data contract).
 
 **Rendering gate (do not skip):** before building either view, deploy a *trivial* MCP App and
 confirm **CCD renders MCP App UI inline** ([0006 gating criteria](../decisions/0006-phased-delivery.md)).
@@ -44,7 +44,7 @@ Each row's bar spans that day's `[min, max]` positioned **within the week's over
 *current* temperature as a dot. All of this is computed in the view from the daily arrays + the
 current temp — **no extra tool data**.
 
-### Data contract (what Phase 2 must emit — it already does)
+### Data contract (what the tools must emit — the contract already requires it)
 
 | Element | Reads | From `get_forecast` |
 |---|---|---|
@@ -107,15 +107,15 @@ opt-in `series` block, not just a headline number.
 
 ## Shared — interactions, non-goals, build
 
-**Interactions (Phase 3 detail, not frozen):** variable toggle; baseline toggle (re-call with
+**Interactions (Phase 4 detail, not frozen):** variable toggle; baseline toggle (re-call with
 `1951`/`1980` for the pre-warming contrast); hover a year/day for its value + rank.
 
 **Non-goals / deferred:** maps, multi-location overlays, animation; editing the query from
-inside the view (the model re-calls the tool); mobile-specific layout — gated on the Phase 4
+inside the view (the model re-calls the tool); mobile-specific layout — gated on the Phase 5
 question of whether **Claude mobile renders MCP App UI resources at all**
 ([0006](../decisions/0006-phased-delivery.md)).
 
-**Build (Phase 3):** Node/Vite HTML bundle served by the Rust server, via the `create-mcp-app`
+**Build (Phase 4):** Node/Vite HTML bundle served by the Rust server, via the `create-mcp-app`
 skill + `@modelcontextprotocol/ext-apps`. A distinct web-frontend workstream from the Rust
 server — it depends only on the data contracts above, so it can be built and iterated
-independently once Phase 2 ships those shapes.
+independently once Phase 3 ships those shapes.

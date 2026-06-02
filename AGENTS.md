@@ -19,17 +19,18 @@ free verifier loop an agent can self-correct against. See
 **Phase 1 — Design (complete) → Phase 2 next.** The Phase 0 harness **landed**
 ([#1](https://github.com/mdml/weather-mcp/pull/1)): a skeleton `rmcp` stdio server
 (`Cargo.toml`, `src/`, `justfile`, an MCP conformance test) with green GitHub Actions CI on
-`main`. The Phase 1 **design specs are now frozen** — the three tool contracts + the Phase 3
-app UX are pinned in [docs/design/](docs/design/). Next is **Phase 2 — build the three tools**
-against those specs (no real weather logic yet; Docker/Fly + git hooks remain deferred
-follow-ups). Start at [docs/product/now.md](docs/product/now.md).
+`main`. The Phase 1 **design specs are now frozen** — the three tool contracts + the Phase 4
+app UX are pinned in [docs/design/](docs/design/). Next is **Phase 2 — set the test harness +
+executable bar** against those specs, so Phase 3 builds the tools as a hands-off red→green grind
+(no real weather logic yet; Docker/Fly + git hooks remain deferred follow-ups). Start at
+[docs/product/now.md](docs/product/now.md).
 
 ## Architecture
 
 A single small crate (`weather-mcp`) over a transport abstraction that starts as stdio and
 grows to HTTP without a rewrite, built on the official `rmcp` SDK + tokio. The Phase 0 skeleton
 exists with one trivial `server_info` tool; the three real tools (`get_forecast`,
-`get_historical`, `compare_period`) arrive in Phase 2. See
+`get_historical`, `compare_period`) arrive across Phases 2–3 (tests, then implementation). See
 [ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) and
 [0004-minimal-tool-surface](docs/decisions/0004-minimal-tool-surface.md).
 

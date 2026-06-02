@@ -1,7 +1,9 @@
-# Test plan — the Phase 2 coverage bar
+# Test plan — the build coverage bar
 
-> **Status: frozen-enough (Phase 1).** This is the verifier bar Phase 2 grinds against. It exists
-> *before* the build on purpose: because [tool-specs](tool-specs.md) is frozen, the test
+> **Status: frozen-enough (Phase 1).** This is the verifier bar the build grinds against — the
+> hand-asserted tests are **written in Phase 2** (the executable bar, human-reviewed) and
+> **satisfied by the Phase 3 grind** ([0006](../decisions/0006-phased-delivery.md)). It exists
+> *before* the implementation on purpose: because [tool-specs](tool-specs.md) is frozen, the test
 > checklist is **fully enumerable now** — "coverage" is defined as *every contract clause has a
 > test*, not a gameable line-percentage. This is the concrete expansion of
 > [DEVELOPMENT.md § Testing strategy](../guides/DEVELOPMENT.md#testing-strategy--mock-the-outermost-boundary-not-collaborators)
@@ -108,7 +110,7 @@ The differentiator's logic; aim for **full branch coverage** here (optionally en
 
 ## 4. Done bar
 
-Phase 2 is "tested" when:
+The build (Phase 3) is done when:
 
 - every checkbox in §3 is a passing, named test;
 - every error `code` and every spec output field is exercised (§3.2–3.4);
@@ -116,16 +118,26 @@ Phase 2 is "tested" when:
 - `just check` is green (fmt · clippy `-D warnings` · build · nextest incl. snapshots + conformance);
 - `just test-live` passes against the real API.
 
-## 5. Build order (test-first, for the Phase 2 fanout)
+## 5. Build order — the Phase 2 / Phase 3 boundary
 
-Write the bar before the impl so there's something to grind green:
+Write the bar before the impl so there's something to grind green. The phase boundary falls
+exactly between "red bar authored" and "made green":
 
-1. **Seam + conformance skeleton** — the `WeatherData` trait, a fixture-backed impl, and the
-   conformance test asserting the three tools (failing until they exist).
-2. **`compare.rs` unit tests** against archive fixtures (§3.1) — then make them pass.
-3. **Parsing + location + tool-handler snapshots** (§3.2–3.4) — then make them pass.
-4. **Real HTTP impl + `test-live`** (§3.6) last — the only network-touching code, behind the
+**Phase 2 — author the executable bar (one human-reviewed PR):**
+
+1. **Fixtures** (§2) recorded + committed.
+2. **Type surface + the `WeatherData` trait seam** as stubs (`todo!()`), plus a fixture-backed
+   impl — enough that the tests *compile* and the conformance session connects.
+3. **The red tests:** hand-asserted `compare.rs` (§3.1), parsing + error-mapping (§3.2),
+   location (§3.3); extend conformance to assert the three tools (§3.5); scaffold the snapshot
+   *functions* (§3.4). `just check` now fails in a well-defined way — **the reviewable bar.**
+
+**Phase 3 — make it green (the hands-off fanout):**
+
+4. **Fill the pure logic** behind the seam until §3.1–3.5 pass and the `insta` snapshots are
+   generated + accepted.
+5. **Real HTTP impl + `test-live`** (§3.6) last — the only network-touching code, behind the
    now-proven seam.
 
-This is the parallelizable shape: step 1 is the shared foundation (one agent), then one agent
-per tool over the trait, each grinding its slice of §3 to green → PR.
+Parallelizable shape: Phase 2 + the shared seam are one foundation (one agent); then in Phase 3,
+one agent per tool/module grinds its slice of §3 to green → PR.
