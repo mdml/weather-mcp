@@ -1,7 +1,7 @@
-# Tool specs — the Phase 2 contract
+# Tool specs — the build contract
 
-> **Status: frozen for the Phase 2 build, expected to evolve.** This is the contract Phase 2
-> builds against and the `insta` snapshots pin — frozen enough that an agent can grind against a
+> **Status: frozen for the build, expected to evolve.** This is the contract the build
+> (Phases 2–3) grinds against and the `insta` snapshots pin — frozen enough that an agent can grind against a
 > stable bar, *not* frozen as in "we got it right the first time." It's a humble v1; we expect to
 > revise it as we dogfood. Changing a request param or output field is a deliberate spec change
 > (amend this doc + the snapshots together), not silent drift from code.
@@ -55,7 +55,7 @@ Rules:
   one is returned and the alternatives are listed in `notes` — **ambiguity is a note, not an
   error** (non-blocking).
 - A `location` string that geocodes to zero results is a `location_not_found` error.
-- Reverse geocoding is **not** done in Phase 2: when coordinates are passed directly, the
+- Reverse geocoding is **not** done in v1: when coordinates are passed directly, the
   echoed `location.name`/`admin1`/`country` are `null` (the timezone + elevation still come back
   from the weather response). Reverse geocoding is a possible future add.
 
@@ -96,7 +96,7 @@ first-class ERA5 aggregate and the trend story doesn't need it. Adding a variabl
 + one snapshot.
 
 > **Verify at build:** `temperature_2m_mean` is confirmed available on the Forecast API; on the
-> **Archive** API it's expected but the docs page only listed it partially. The Phase 2 agent
+> **Archive** API it's expected but the docs page only listed it partially. The build
 > confirms it against the live archive (the live/snapshot tests catch a miss); if it's absent,
 > derive the mean as `(temperature_2m_max + temperature_2m_min) / 2` and note the derivation.
 
@@ -310,7 +310,7 @@ to 1950" use case, and it's why the per-year array (not just summary stats) is i
 }
 ```
 
-`baseline.values` (the per-year array) is the key shape decision: it lets the Phase 3 app draw
+`baseline.values` (the per-year array) is the key shape decision: it lets the Phase 4 app draw
 the **distribution**, not just the headline number — see [app-spec](app-spec.md).
 
 ### 4.5 Optional day-by-day series (`include_series=true`)
@@ -333,7 +333,7 @@ climatology band).
   1991–2020) and is sliced client-side; the period is a second request; geocoding is one more
   for a `location` string. So a `compare_period` call is **~2–3 upstream requests** — trivially
   within the free limits (600/min). No per-year fan-out.
-- **Caching is deferred** (Phase 2 ships without it) but the seam lives in the `openmeteo/`
+- **Caching is deferred** (v1 ships without it) but the seam lives in the `openmeteo/`
   client: archive windows older than the 5-day lag are **immutable**, and the 1991–2020 normal
   for a given location is the prime cache candidate (identical across repeated calls). Document,
   don't build yet.
