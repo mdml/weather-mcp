@@ -2,8 +2,9 @@
 //!
 //! This is the impl the deterministic suite and the conformance binary run against, so the whole
 //! tool path is offline and reproducible ([test-plan §1](../../docs/design/test-plan.md)). It is
-//! **real glue** (file routing + windowed archive slicing); the parsing it delegates to is the
-//! part stubbed in Phase 2. Routing is convention-based against the Boston fixture set:
+//! **real glue** (file routing + windowed archive slicing); the parsing it delegates to lives in
+//! the sibling `forecast`/`archive` modules. Routing is convention-based against the Boston
+//! fixture set:
 //!
 //! - `geocode(name)` → `geocode_<slug>.json`, falling back to `geocode_empty.json` for any name
 //!   without a fixture (so an arbitrary nonsense name exercises the `location_not_found` path).

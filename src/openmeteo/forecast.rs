@@ -1,9 +1,8 @@
 //! Forecast API: wire types, the `get_forecast` payload (tool-specs §2), and the parse seam.
 //!
 //! Values arrive already in the requested units (the query sets `temperature_unit` etc.), so
-//! parsing is a pure rename/reshape + WMO decode — no unit math. `parse_forecast` is stubbed in
-//! Phase 2; the deserialize test (over the recorded fixture) and the `get_forecast` snapshot
-//! (test-plan §3.4) pin it.
+//! parsing is a pure rename/reshape + WMO decode — no unit math. The deserialize test (over the
+//! recorded fixture) and the `get_forecast` snapshot (test-plan §3.4) pin `parse_forecast`.
 
 use serde::{Deserialize, Serialize};
 
@@ -101,7 +100,7 @@ pub struct RawDaily {
 /// Parse a Forecast API body into the [`ForecastPayload`]: deserialize [`RawForecast`], rename to
 /// the clean §2 columns, and decode `weather_code` → `weather` via [`crate::wmo::decode`].
 ///
-/// Phase 3 fills this in; the deserialize + snapshot tests (test-plan §3.2/§3.4) pin it.
+/// The deserialize + snapshot tests (test-plan §3.2/§3.4) pin it.
 pub fn parse_forecast(body: &str) -> Result<ForecastPayload, WeatherError> {
     let raw: RawForecast = serde_json::from_str(body).map_err(|e| {
         WeatherError::new(

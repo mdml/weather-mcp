@@ -2,7 +2,7 @@
 //!
 //! The server owns this map so the model/app needn't carry one; `get_forecast` echoes both the
 //! raw `weather_code` and the decoded `weather` label. The table is part of the contract and is
-//! pinned by snapshot. This is real, complete, deterministic data — not a Phase 3 stub.
+//! pinned by snapshot. This is real, complete, deterministic data.
 
 /// Decode a WMO 4677 weather code to its human label. Unknown codes return `"Unknown"`.
 pub fn decode(code: u8) -> &'static str {

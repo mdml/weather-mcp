@@ -8,9 +8,9 @@
 //! decides stdio vs. HTTP. It holds the [`WeatherData`] client behind `Arc<dyn …>` so the binary
 //! can pick the fixture-backed or real-HTTP impl at runtime.
 //!
-//! **Phase 3 status:** the handlers are wired to the pure pipeline behind the [`WeatherData`] seam
-//! — resolve the location (geocode or coordinates), fetch forecast/archive, run the date guards +
-//! ERA5-lag clamp + `compare` aggregation, and assemble the §1.6 envelope. A [`WeatherError`]
+//! The handlers run the pure pipeline behind the [`WeatherData`] seam: resolve the location
+//! (geocode or coordinates), fetch forecast/archive, run the date guards + ERA5-lag clamp +
+//! `compare` aggregation, and assemble the §1.6 envelope. A [`WeatherError`]
 //! (§1.5) surfaces as a success-typed `CallToolResult` with `is_error: true` (so the model can
 //! read + recover), never a protocol-level error.
 
@@ -171,7 +171,7 @@ pub struct WeatherServer {
     // from dead-code analysis, hence the allow (as in Phase 0).
     #[allow(dead_code)]
     tool_router: ToolRouter<Self>,
-    // The Open-Meteo data source (fixture-backed or real HTTP). The Phase 3 handlers call it;
+    // The Open-Meteo data source (fixture-backed or real HTTP). The handlers call it;
     // the binary selects the impl at startup.
     client: Arc<dyn WeatherData>,
 }

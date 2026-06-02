@@ -3,11 +3,10 @@
 //! Spawns the **built `weather-mcp` binary** as a child process, with the fixture-backed client
 //! selected via `WEATHER_MCP_FIXTURES`, and scripts a real MCP client session over stdio.
 //!
-//! Phase 2 status: `initialize` and `tools/list` (names + schemas) are **live and green** — the
-//! three tools are registered and their request schemas are pinned by snapshot. The `tools/call`
-//! paths are **red** (the handlers return a "not implemented (Phase 3)" protocol error, so the
-//! call fails cleanly rather than crashing the child); Phase 3 turns them green and the result
-//! snapshots get generated + accepted then. This also covers the §3.4 handler-snapshot scaffolds.
+//! `initialize` and `tools/list` (names + schemas) register the three tools and pin their request
+//! schemas by snapshot. The `tools/call` paths drive each tool end-to-end against the
+//! fixture-backed client and assert the result snapshots. This also covers the §3.4 handler
+//! snapshots.
 
 use rmcp::{
     model::CallToolRequestParams,
@@ -90,7 +89,7 @@ async fn tools_list_is_exactly_the_three_weather_tools() -> anyhow::Result<()> {
     Ok(())
 }
 
-// ---- tools/call each tool end-to-end against the fixture client (red until Phase 3) -----------
+// ---- tools/call each tool end-to-end against the fixture client -------------------------------
 
 #[tokio::test]
 async fn call_get_forecast_returns_success() -> anyhow::Result<()> {

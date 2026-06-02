@@ -1,7 +1,7 @@
 //! Date-range validation (§1.5 `invalid_date_range`) and the ERA5-lag clamp (§1.7).
 //!
 //! Pure and deterministic (today is passed in, not read from the clock), so it's unit-tested
-//! offline. Stubbed in Phase 2; the §3.4 date-guard tests and the §1.7 clamp test are the bar.
+//! offline. The §3.4 date-guard tests and the §1.7 clamp test pin it.
 
 use crate::types::WeatherError;
 
@@ -11,7 +11,7 @@ pub const ERA5_EPOCH: &str = "1940-01-01";
 /// Validate a historical/compare window (§1.5): `start <= end`, `start >= 1940-01-01`, and `end`
 /// not after `today` (`YYYY-MM-DD`). Any violation is `invalid_date_range`.
 ///
-/// Phase 3 fills this in; the §3.4 tests pin it.
+/// The §3.4 tests pin it.
 pub fn validate_date_range(start: &str, end: &str, today: &str) -> Result<(), WeatherError> {
     // All inputs are `YYYY-MM-DD`, so a lexicographic compare is a chronological compare.
     if start > end {
@@ -36,7 +36,7 @@ pub fn validate_date_range(start: &str, end: &str, today: &str) -> Result<(), We
 /// returning the effective end plus a human `notes` string when a clamp happened (§1.7). Never
 /// errors and never silently shortens without a note.
 ///
-/// Phase 3 fills this in; the §1.7 clamp test pins it.
+/// The §1.7 clamp test pins it.
 pub fn clamp_end_to_archive(requested_end: &str, last_available: &str) -> (String, Option<String>) {
     if requested_end > last_available {
         let note = format!("end clamped from {requested_end} to {last_available} (ERA5 5-day lag)");

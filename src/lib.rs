@@ -27,7 +27,7 @@ use crate::openmeteo::{fixture::FixtureClient, http::HttpClient, WeatherData};
 
 /// The env var that switches the binary onto the fixture-backed client (offline, deterministic).
 /// Set to a fixtures directory; the conformance test and `just test` use it. When unset, the
-/// binary uses the real HTTP client (Phase 3).
+/// binary uses the real HTTP client.
 pub const FIXTURES_ENV: &str = "WEATHER_MCP_FIXTURES";
 
 /// Build the data source the binary serves over, from the environment ([`FIXTURES_ENV`]).

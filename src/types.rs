@@ -4,9 +4,9 @@
 //! `units` enum, the curated `variables` enum + its aggregation/column mapping, the shared
 //! output envelope (`location` / `units` / `notes`), and the structured error model (§1.5).
 //!
-//! Everything here is pure data + small total functions — no I/O, no `todo!()`. The tool
-//! *logic* (parse, aggregate, resolve, assemble) is what's stubbed in Phase 2; this vocabulary
-//! is the stable surface the tests and the stubbed logic both compile against.
+//! Everything here is pure data + small total functions — no I/O. The tool *logic* (parse,
+//! aggregate, resolve, assemble) lives in the sibling modules; this vocabulary is the stable
+//! surface they and the tests both compile against.
 
 use serde::{Deserialize, Serialize};
 

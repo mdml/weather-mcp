@@ -9,7 +9,7 @@
 //! Layering ([test-plan §1](../../docs/design/test-plan.md#1-the-test-seam--why-no-http-mock-is-needed)):
 //! `HTTP → parse (&str→struct) → aggregate (compare.rs) → assemble`. The parse functions here
 //! and the error mapping are the **pure** seam between raw bytes and typed data — fixture-tested,
-//! no network. They're stubbed (`todo!()`) in Phase 2; the tests that pin them are the red bar.
+//! no network. The §3.2 parsing tests pin them.
 
 pub mod archive;
 pub mod fixture;
@@ -121,7 +121,7 @@ pub struct RawGeoHit {
 /// empty vec (the caller maps that to `location_not_found`). Malformed JSON is an
 /// `upstream_error`.
 ///
-/// Phase 3 fills this in; the §3.2/§3.3 tests pin it.
+/// The §3.2/§3.3 tests pin it.
 pub fn parse_geocode(body: &str) -> Result<Vec<GeoHit>, WeatherError> {
     let raw: RawGeocode = serde_json::from_str(body).map_err(|e| {
         WeatherError::new(
@@ -158,7 +158,7 @@ pub fn parse_geocode(body: &str) -> Result<Vec<GeoHit>, WeatherError> {
 /// `upstream_error` (reason passed through in `message`). A 2xx never reaches here.
 ///
 /// Network failures / timeouts map to `upstream_unavailable` at the call site (see
-/// [`http::HttpClient`]), not here. Phase 3 fills this in; the §3.2 tests pin it.
+/// [`http::HttpClient`]), not here. The §3.2 tests pin it.
 pub fn map_http_error(status: u16, body: &str) -> WeatherError {
     use crate::types::ErrorCode;
 

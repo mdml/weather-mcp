@@ -3,7 +3,7 @@
 //! One wide archive request feeds both `get_historical` and the `compare_period` baseline +
 //! period — the parsed [`ArchiveData`] is sliced client-side per window ([`slice_archive`], §4.6).
 //! Columns are kept as a name→values map so a variable's columns and the slicing logic stay
-//! generic. `parse_archive`/`slice_archive` are stubbed in Phase 2; the §3.1/§3.2 tests pin them.
+//! generic. The §3.1/§3.2 tests pin `parse_archive`/`slice_archive`.
 
 use std::collections::BTreeMap;
 
@@ -54,7 +54,7 @@ pub struct RawArchiveDaily {
 
 /// Parse an Archive API body into [`ArchiveData`] (deserialize [`RawArchive`], reshape).
 ///
-/// Phase 3 fills this in; the §3.2 deserialize test pins it.
+/// The §3.2 deserialize test pins it.
 pub fn parse_archive(body: &str) -> Result<ArchiveData, WeatherError> {
     let raw: RawArchive = serde_json::from_str(body).map_err(|e| {
         WeatherError::new(
@@ -80,7 +80,7 @@ pub fn parse_archive(body: &str) -> Result<ArchiveData, WeatherError> {
 /// windowed upstream request, and by `compare_period` to carve the baseline/period out of one
 /// wide fetch (§4.6).
 ///
-/// Phase 3 fills this in; the §3.1 calendar-window tests pin it.
+/// The §3.1 calendar-window tests pin it.
 pub fn slice_archive(data: &ArchiveData, start: &str, end: &str) -> ArchiveData {
     let keep: Vec<usize> = data
         .daily

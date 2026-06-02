@@ -2,7 +2,7 @@
 //!
 //! Crucially, the archive loader/slicer here are **independent of the code under test**: they
 //! deserialize the fixture and reshape/slice it directly, so the `compare` oracle tests don't
-//! depend on the (stubbed) `parse_archive`/`slice_archive`. That independence is the whole point
+//! depend on the production `parse_archive`/`slice_archive`. That independence is the whole point
 //! of the oracle (test-plan §3.1) — the expected numbers and the inputs are computed without the
 //! implementation.
 
@@ -41,8 +41,8 @@ pub fn archive_fixture() -> ArchiveData {
     }
 }
 
-/// Inclusive `YYYY-MM-DD` window slice, preserving index alignment (test-local twin of the
-/// stubbed `slice_archive`).
+/// Inclusive `YYYY-MM-DD` window slice, preserving index alignment (test-local twin of
+/// `slice_archive`).
 pub fn slice(data: &ArchiveData, start: &str, end: &str) -> ArchiveData {
     let keep: Vec<usize> = data
         .daily
@@ -65,7 +65,7 @@ pub fn slice(data: &ArchiveData, start: &str, end: &str) -> ArchiveData {
     }
 }
 
-/// Load geocode hits from a fixture into [`GeoHit`]s, independent of the stubbed `parse_geocode`.
+/// Load geocode hits from a fixture into [`GeoHit`]s, independent of `parse_geocode`.
 pub fn geocode_hits(fixture: &str) -> Vec<GeoHit> {
     let raw: RawGeocode = serde_json::from_str(&read_fixture(fixture)).expect("geocode json");
     raw.results
