@@ -95,10 +95,10 @@ Humidity and other forecast-only fields are intentionally absent here: daily hum
 first-class ERA5 aggregate and the trend story doesn't need it. Adding a variable = one row here
 + one snapshot.
 
-> **Verify at build:** `temperature_2m_mean` is confirmed available on the Forecast API; on the
-> **Archive** API it's expected but the docs page only listed it partially. The build
-> confirms it against the live archive (the live/snapshot tests catch a miss); if it's absent,
-> derive the mean as `(temperature_2m_max + temperature_2m_min) / 2` and note the derivation.
+> **Verify at build — resolved (Phase 2):** `temperature_2m_mean` is **confirmed present on the
+> Archive API** in the recorded fixture (`tests/fixtures/archive_boston_1991-2026.json`), so no
+> derivation is needed. The `(temperature_2m_max + temperature_2m_min) / 2` fallback is therefore
+> unused for v1; `just test-live` still guards against future upstream drift.
 
 ### 1.5 Error model
 
@@ -312,6 +312,20 @@ to 1950" use case, and it's why the per-year array (not just summary stats) is i
 
 `baseline.values` (the per-year array) is the key shape decision: it lets the Phase 4 app draw
 the **distribution**, not just the headline number — see [app-spec](app-spec.md).
+
+**Statistical conventions (pinned in Phase 2 by the [test-plan §3.1](test-plan.md#31-comparers--pure-aggregation-the-crown-jewel) oracle).** The spec froze the *shape* of the
+anomaly block; these define its exact semantics so code and contract agree:
+
+- **`stddev`** is the **population** standard deviation (divide by `n_years`), not the sample
+  stddev — the baseline years are the whole reference population, not a sample of it.
+- **`percentile_rank`** = `100 × (count of baseline years strictly below period_value) / n_years`.
+- **`standardized`** = `(period_value − mean) / stddev` (the z-score).
+- **`rank`** orders the baseline years **plus the period itself** (`n_years + 1` values) from most
+  to least extreme — **largest value first** — and names the period's 1-based position with a
+  variable-specific descriptor: `wettest` (precipitation), `warmest` (temperature), `snowiest`
+  (snowfall), `windiest` (wind). E.g. a dry period `26th-wettest of 31` ⇒ 6th-driest of 31.
+- **Feb 29** is aggregated where present; when the window spans 02-29 and the baseline mixes leap
+  and non-leap years, a `notes` entry records it (the day-count varies by year). See §4.2.
 
 ### 4.5 Optional day-by-day series (`include_series=true`)
 

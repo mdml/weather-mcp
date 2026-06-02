@@ -16,21 +16,21 @@ free verifier loop an agent can self-correct against. See
 
 ## Status
 
-**Phase 1 — Design (complete) → Phase 2 next.** The Phase 0 harness **landed**
-([#1](https://github.com/mdml/weather-mcp/pull/1)): a skeleton `rmcp` stdio server
-(`Cargo.toml`, `src/`, `justfile`, an MCP conformance test) with green GitHub Actions CI on
-`main`. The Phase 1 **design specs are now frozen** — the three tool contracts + the Phase 4
-app UX are pinned in [docs/design/](docs/design/). Next is **Phase 2 — set the test harness +
-executable bar** against those specs, so Phase 3 builds the tools as a hands-off red→green grind
-(no real weather logic yet; Docker/Fly + git hooks remain deferred follow-ups). Start at
-[docs/product/now.md](docs/product/now.md).
+**Phase 2 — executable bar authored (red) → Phase 3 next.** The Phase 0 harness landed
+([#1](https://github.com/mdml/weather-mcp/pull/1)) and the **design specs are frozen**
+([docs/design/](docs/design/)). The **Phase 2 bar is now authored and in review**: recorded
+fixtures, the `WeatherData` seam + full type surface with the pure logic stubbed `todo!()`, and
+the hand-asserted tests that encode the specs. `just check` is green at fmt/clippy/build and
+**red at exactly the unimplemented logic** — the reviewable bar. Next is **Phase 3 — the
+hands-off red→green grind** that fills the logic behind the seam (Docker/Fly + git hooks remain
+deferred follow-ups). Start at [docs/product/now.md](docs/product/now.md).
 
 ## Architecture
 
 A single small crate (`weather-mcp`) over a transport abstraction that starts as stdio and
-grows to HTTP without a rewrite, built on the official `rmcp` SDK + tokio. The Phase 0 skeleton
-exists with one trivial `server_info` tool; the three real tools (`get_forecast`,
-`get_historical`, `compare_period`) arrive across Phases 2–3 (tests, then implementation). See
+grows to HTTP without a rewrite, built on the official `rmcp` SDK + tokio. The three tools
+(`get_forecast`, `get_historical`, `compare_period`) are declared with their full type surface +
+test bar (Phase 2); their pure logic is filled behind the `WeatherData` seam in Phase 3. See
 [ARCHITECTURE.md](docs/guides/ARCHITECTURE.md) and
 [0004-minimal-tool-surface](docs/decisions/0004-minimal-tool-surface.md).
 

@@ -1,21 +1,21 @@
 //! `weather-mcp` — entry point.
 //!
-//! Phase 0 skeleton: build the [`server::WeatherServer`] and serve it over stdio.
+//! A thin shell: init tracing, select the data source (fixture-backed vs. real HTTP, via
+//! [`weather_mcp::client_from_env`]), build the [`WeatherServer`], and serve it over stdio.
 //! Logs go to **stderr** — stdout is the MCP stdio channel (see ARCHITECTURE.md).
-
-mod compare;
-mod openmeteo;
-mod server;
+//!
+//! The transport seam: `serve` takes any transport, so swapping `stdio()` for streamable-HTTP
+//! later won't touch the tool implementations.
 
 use rmcp::{transport::stdio, ServiceExt};
 use tracing_subscriber::EnvFilter;
 
-use crate::server::WeatherServer;
+use weather_mcp::server::WeatherServer;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Structured logging to stderr. `with_ansi(false)` keeps the stream clean for
-    // capture; `RUST_LOG` (env-filter) controls verbosity, defaulting to info.
+    // Structured logging to stderr. `with_ansi(false)` keeps the stream clean for capture;
+    // `RUST_LOG` (env-filter) controls verbosity, defaulting to info.
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
@@ -24,11 +24,10 @@ async fn main() -> anyhow::Result<()> {
         .with_ansi(false)
         .init();
 
+    let client = weather_mcp::client_from_env();
     tracing::info!("starting weather-mcp server (stdio transport)");
 
-    // The transport seam (ARCHITECTURE.md): `serve` takes any transport, so swapping
-    // `stdio()` for streamable-HTTP in Phase 3 won't touch the tool implementations.
-    let service = WeatherServer::new()
+    let service = WeatherServer::new(client)
         .serve(stdio())
         .await
         .inspect_err(|err| tracing::error!(?err, "failed to start MCP service"))?;

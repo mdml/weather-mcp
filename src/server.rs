@@ -1,93 +1,252 @@
-//! The MCP server handler.
+//! The MCP server handler — the three weather tools (tool-specs §2–§4).
 //!
-//! Phase 0 exposes exactly one trivial, deterministic, network-free tool:
-//! [`WeatherServer::server_info`]. The real weather tools (`get_forecast`,
-//! `get_historical`, `compare_period`) arrive in Phase 1 — see ARCHITECTURE.md.
+//! Exposes exactly `get_forecast`, `get_historical`, `compare_period`. The request structs are
+//! the tool contract (their `JsonSchema` surfaces in `tools/list`); the result structs pin the
+//! output envelope + payload shapes the `insta` snapshots assert.
 //!
-//! The server type is deliberately **independent of the transport** (the transport
-//! seam): `serve(...)` in `main.rs` decides stdio vs. HTTP.
+//! The server is **independent of the transport** (the transport seam): `serve(...)` in `main.rs`
+//! decides stdio vs. HTTP. It holds the [`WeatherData`] client behind `Arc<dyn …>` so the binary
+//! can pick the fixture-backed or real-HTTP impl at runtime.
+//!
+//! **Phase 2 status:** the handlers are stubbed — they return a clean protocol error so the
+//! conformance child process never panics. `tools/list` (names + schemas) is fully live now; the
+//! `tools/call` paths go green in Phase 3 once the pure pipeline behind the seam is filled in.
+//! Each handler documents the exact Phase 3 wiring it will grow.
+
+use std::sync::Arc;
 
 use rmcp::{
-    handler::server::router::tool::ToolRouter,
-    model::{CallToolResult, Content, Implementation, ServerCapabilities, ServerInfo},
+    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
+    model::{CallToolResult, Implementation, ServerCapabilities, ServerInfo},
     tool, tool_handler, tool_router, ErrorData as McpError, ServerHandler,
 };
 use serde::{Deserialize, Serialize};
 
-/// Static identity for the server, surfaced both in `initialize` (via [`get_info`]) and
-/// from the `server_info` tool. Kept as constants so the conformance/snapshot tests are
-/// fully deterministic and don't depend on build-env quirks.
-///
-/// [`get_info`]: WeatherServer::get_info
+use crate::compare::ComparePayload;
+use crate::openmeteo::{
+    archive::ArchiveDaily,
+    forecast::{Current, DailyForecast},
+    WeatherData,
+};
+use crate::types::{default_variables, Envelope, Units, Variable};
+
 pub const SERVER_NAME: &str = "weather-mcp";
 pub const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const SERVER_DESCRIPTION: &str =
     "MCP server wrapping the Open-Meteo API (forecast + historical trends).";
 
-/// The static payload returned by the `server_info` tool.
-///
-/// Derives `JsonSchema` so the (empty) output shape is well-formed; `Serialize` for the
-/// tool result and `Deserialize` so tests can parse it back if needed.
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-pub struct ServerInfoResult {
-    /// Server name (matches the MCP `initialize` server name).
-    pub name: String,
-    /// Server version (the crate version).
-    pub version: String,
-    /// Human-readable description of what the server does.
-    pub description: String,
+// ---------------------------------------------------------------------------------------------
+// Request contracts (§1.1–§1.4, §2–§4). These derive `JsonSchema` so the schema is published in
+// `tools/list`; the snapshot pins it.
+// ---------------------------------------------------------------------------------------------
+
+fn default_forecast_days() -> u8 {
+    7
+}
+fn default_baseline_start_year() -> i32 {
+    1991
+}
+fn default_baseline_end_year() -> i32 {
+    2020
 }
 
-impl ServerInfoResult {
-    fn current() -> Self {
-        Self {
-            name: SERVER_NAME.to_string(),
-            version: SERVER_VERSION.to_string(),
-            description: SERVER_DESCRIPTION.to_string(),
-        }
-    }
+/// `get_forecast` request (§2). Exactly one of `location` vs `latitude`+`longitude` (§1.1).
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
+pub struct ForecastRequest {
+    #[serde(default)]
+    pub location: Option<String>,
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
+    /// 1–16; Open-Meteo max is 16.
+    #[serde(default = "default_forecast_days")]
+    pub forecast_days: u8,
+    #[serde(default)]
+    pub units: Units,
 }
 
-/// The weather MCP server. Phase 0 holds only the tool router; Phase 1 adds the
-/// Open-Meteo client alongside it.
+/// `get_historical` request (§3).
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
+pub struct HistoricalRequest {
+    #[serde(default)]
+    pub location: Option<String>,
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
+    /// `YYYY-MM-DD`, ≥ 1940-01-01.
+    pub start_date: String,
+    /// `YYYY-MM-DD`, clamped per the ERA5 lag (§1.7).
+    pub end_date: String,
+    #[serde(default = "default_variables")]
+    pub variables: Vec<Variable>,
+    #[serde(default)]
+    pub units: Units,
+}
+
+/// A `YYYY-MM-DD` start/end window of interest (§4.3).
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
+pub struct Period {
+    pub start: String,
+    pub end: String,
+}
+
+/// `compare_period` request (§4.3).
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
+pub struct CompareRequest {
+    #[serde(default)]
+    pub location: Option<String>,
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
+    pub period: Period,
+    #[serde(default = "default_variables")]
+    pub variables: Vec<Variable>,
+    /// ≥ 1940 (§4.1).
+    #[serde(default = "default_baseline_start_year")]
+    pub baseline_start_year: i32,
+    /// ≥ 1940 (§4.1).
+    #[serde(default = "default_baseline_end_year")]
+    pub baseline_end_year: i32,
+    /// Adds the day-by-day series for the time-series view (§4.5).
+    #[serde(default)]
+    pub include_series: bool,
+    #[serde(default)]
+    pub units: Units,
+}
+
+// ---------------------------------------------------------------------------------------------
+// Result contracts (§1.6 envelope + per-tool payload). Output-only; the snapshots pin these.
+// ---------------------------------------------------------------------------------------------
+
+/// `get_forecast` success result: shared envelope + current + daily (§2).
+#[derive(Debug, Clone, Serialize)]
+pub struct ForecastResult {
+    #[serde(flatten)]
+    pub envelope: Envelope,
+    pub current: Current,
+    pub daily: DailyForecast,
+}
+
+/// The explicit window echoed by `get_historical` (§3).
+#[derive(Debug, Clone, Serialize)]
+pub struct RangeInfo {
+    pub start: String,
+    pub end: String,
+}
+
+/// `get_historical` success result: envelope + range + the curated daily columns (§3).
+#[derive(Debug, Clone, Serialize)]
+pub struct HistoricalResult {
+    #[serde(flatten)]
+    pub envelope: Envelope,
+    pub range: RangeInfo,
+    pub daily: ArchiveDaily,
+}
+
+/// `compare_period` success result: envelope + the comparison payload (§4.4).
+#[derive(Debug, Clone, Serialize)]
+pub struct CompareResult {
+    #[serde(flatten)]
+    pub envelope: Envelope,
+    #[serde(flatten)]
+    pub payload: ComparePayload,
+}
+
+// ---------------------------------------------------------------------------------------------
+// The server
+// ---------------------------------------------------------------------------------------------
+
+/// The weather MCP server. Holds the tool router and the Open-Meteo data seam.
 #[derive(Clone)]
 pub struct WeatherServer {
-    // Read by the `#[tool_handler]`-generated `call_tool`/`list_tools` impl; dead-code
-    // analysis doesn't see through the macro, hence the allow.
+    // Read by the `#[tool_handler]`-generated `call_tool`/`list_tools`; the macro hides the use
+    // from dead-code analysis, hence the allow (as in Phase 0).
     #[allow(dead_code)]
     tool_router: ToolRouter<Self>,
-}
-
-impl Default for WeatherServer {
-    fn default() -> Self {
-        Self::new()
-    }
+    // The Open-Meteo data source (fixture-backed or real HTTP). Unused until the Phase 3 handlers
+    // call it; kept here now so the seam is wired and the binary selects the impl at startup.
+    #[allow(dead_code)]
+    client: Arc<dyn WeatherData>,
 }
 
 #[tool_router]
 impl WeatherServer {
-    pub fn new() -> Self {
+    /// Build a server over the given data source.
+    pub fn new(client: Arc<dyn WeatherData>) -> Self {
         Self {
             tool_router: Self::tool_router(),
+            client,
         }
     }
 
-    /// Return static identity (name/version/description) for this server as JSON.
-    ///
-    /// Deterministic and network-free — the canary that proves the MCP tool path works
-    /// end-to-end before any real weather logic exists.
-    #[tool(description = "Return this server's name, version, and description as JSON.")]
-    async fn server_info(&self) -> Result<CallToolResult, McpError> {
-        let info = ServerInfoResult::current();
-        Ok(CallToolResult::success(vec![Content::json(info)?]))
+    /// Current conditions + an N-day daily forecast for a location (§2).
+    #[tool(
+        description = "Current conditions and an N-day daily forecast for a location (by name or \
+                       coordinates). Returns current weather plus a chart-friendly daily series."
+    )]
+    async fn get_forecast(
+        &self,
+        Parameters(_req): Parameters<ForecastRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Phase 3 wiring:
+        //   let input = location::parse_location_input(req.location, req.latitude, req.longitude)?;
+        //   let (location, mut notes) = resolve(input via self.client.geocode | coordinates);
+        //   let payload = self.client.forecast(&ForecastQuery { .. }).await?;  // fill tz/elev
+        //   let result = ForecastResult { envelope: Envelope { location, units, notes }, .. };
+        //   Ok(CallToolResult::structured(serde_json::to_value(result)?))
+        Err(McpError::internal_error(
+            "get_forecast not implemented yet (Phase 3)",
+            None,
+        ))
+    }
+
+    /// The daily ERA5 record for an explicit historical window (§3).
+    #[tool(
+        description = "The daily historical weather record (ERA5) for an explicit date window: \
+                       temperature, precipitation, snowfall, and/or wind for the requested variables."
+    )]
+    async fn get_historical(
+        &self,
+        Parameters(_req): Parameters<HistoricalRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Phase 3 wiring:
+        //   validate dates (§1.5 invalid_date_range), resolve location, clamp end (§1.7 -> notes),
+        //   let data = self.client.archive(&ArchiveQuery { columns: union of variables, .. }).await?;
+        //   Ok(CallToolResult::structured(HistoricalResult { .. }))
+        Err(McpError::internal_error(
+            "get_historical not implemented yet (Phase 3)",
+            None,
+        ))
+    }
+
+    /// Aggregate a period and compare it against a climate baseline (§4) — the differentiator.
+    #[tool(
+        description = "Compare a period of interest against a climate baseline using calendar-window \
+                       matching: returns the period aggregate, the per-year baseline distribution, and \
+                       anomaly scores (absolute, percent, z-score, percentile, rank)."
+    )]
+    async fn compare_period(
+        &self,
+        Parameters(_req): Parameters<CompareRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        // Phase 3 wiring:
+        //   resolve location; build baseline + period ArchiveQuery (§4.6, ~2 fetches);
+        //   let out = compare::compare(&baseline, &period, &spec)?;  // out.notes -> envelope.notes
+        //   Ok(CallToolResult::structured(CompareResult { envelope, payload: out.payload }))
+        Err(McpError::internal_error(
+            "compare_period not implemented yet (Phase 3)",
+            None,
+        ))
     }
 }
 
 #[tool_handler]
 impl ServerHandler for WeatherServer {
     fn get_info(&self) -> ServerInfo {
-        // `ServerInfo` / `Implementation` are `#[non_exhaustive]` (defined in rmcp), so
-        // we can't use struct-literal syntax — start from `default()` and assign fields.
+        // `ServerInfo` / `Implementation` are `#[non_exhaustive]` — start from `default()`.
         let mut server_info = Implementation::default();
         server_info.name = SERVER_NAME.to_string();
         server_info.version = SERVER_VERSION.to_string();

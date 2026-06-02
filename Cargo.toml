@@ -8,6 +8,14 @@ license = "Apache-2.0"
 repository = "https://github.com/mdml/weather-mcp"
 publish = false
 
+# Library + binary in one crate (not a crate split — ARCHITECTURE.md keeps this a single
+# small crate). The lib holds the testable surface (types, the `WeatherData` seam, the pure
+# parse/aggregate logic); the bin is a thin shell that selects a transport + client and serves.
+# `tests/` integration tests link the lib; module-level unit tests live alongside the code.
+[lib]
+name = "weather_mcp"
+path = "src/lib.rs"
+
 [[bin]]
 name = "weather-mcp"
 path = "src/main.rs"
@@ -17,11 +25,15 @@ path = "src/main.rs"
 # server macros + stdio transport; the client + child-process transport are pulled in
 # for the conformance test (see [dev-dependencies]).
 rmcp = { version = "1.7", features = ["server", "macros", "transport-io"] }
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "io-std", "signal"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "io-std", "signal", "fs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1"
 anyhow = "1"
+# Object-safe async trait for the `WeatherData` I/O seam (openmeteo::WeatherData), so the
+# fixture-backed and real-HTTP clients can be swapped behind `Arc<dyn WeatherData>` and the
+# binary can pick one at runtime (the conformance test reuses the binary with a fixture client).
+async-trait = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "std"] }
 

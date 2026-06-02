@@ -1191,6 +1191,7 @@ name = "weather-mcp"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "insta",
  "rmcp",
  "schemars",
