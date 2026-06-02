@@ -12,8 +12,24 @@ pub const ERA5_EPOCH: &str = "1940-01-01";
 /// not after `today` (`YYYY-MM-DD`). Any violation is `invalid_date_range`.
 ///
 /// Phase 3 fills this in; the §3.4 tests pin it.
-pub fn validate_date_range(_start: &str, _end: &str, _today: &str) -> Result<(), WeatherError> {
-    todo!("Phase 3: start<=end, start>=1940-01-01, end<=today (test-plan §3.4)")
+pub fn validate_date_range(start: &str, end: &str, today: &str) -> Result<(), WeatherError> {
+    // All inputs are `YYYY-MM-DD`, so a lexicographic compare is a chronological compare.
+    if start > end {
+        return Err(WeatherError::invalid_date_range(format!(
+            "start ({start}) is after end ({end})"
+        )));
+    }
+    if start < ERA5_EPOCH {
+        return Err(WeatherError::invalid_date_range(format!(
+            "start ({start}) is before the ERA5 epoch ({ERA5_EPOCH})"
+        )));
+    }
+    if end > today {
+        return Err(WeatherError::invalid_date_range(format!(
+            "end ({end}) is in the future (after today, {today})"
+        )));
+    }
+    Ok(())
 }
 
 /// Clamp `requested_end` down to `last_available` (the ERA5 ~5-day-lag boundary) when it is later,
@@ -21,9 +37,11 @@ pub fn validate_date_range(_start: &str, _end: &str, _today: &str) -> Result<(),
 /// errors and never silently shortens without a note.
 ///
 /// Phase 3 fills this in; the §1.7 clamp test pins it.
-pub fn clamp_end_to_archive(
-    _requested_end: &str,
-    _last_available: &str,
-) -> (String, Option<String>) {
-    todo!("Phase 3: clamp + 'end clamped from X to Y (ERA5 5-day lag)' note (test-plan §1.7)")
+pub fn clamp_end_to_archive(requested_end: &str, last_available: &str) -> (String, Option<String>) {
+    if requested_end > last_available {
+        let note = format!("end clamped from {requested_end} to {last_available} (ERA5 5-day lag)");
+        (last_available.to_string(), Some(note))
+    } else {
+        (requested_end.to_string(), None)
+    }
 }
