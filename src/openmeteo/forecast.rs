@@ -102,6 +102,45 @@ pub struct RawDaily {
 /// the clean §2 columns, and decode `weather_code` → `weather` via [`crate::wmo::decode`].
 ///
 /// Phase 3 fills this in; the deserialize + snapshot tests (test-plan §3.2/§3.4) pin it.
-pub fn parse_forecast(_body: &str) -> Result<ForecastPayload, WeatherError> {
-    todo!("Phase 3: RawForecast -> ForecastPayload + WMO decode (test-plan §3.2/§3.4)")
+pub fn parse_forecast(body: &str) -> Result<ForecastPayload, WeatherError> {
+    let raw: RawForecast = serde_json::from_str(body).map_err(|e| {
+        WeatherError::new(
+            crate::types::ErrorCode::UpstreamError,
+            format!("failed to parse forecast response: {e}"),
+        )
+    })?;
+
+    let current = Current {
+        time: raw.current.time,
+        temperature: raw.current.temperature_2m,
+        apparent_temperature: raw.current.apparent_temperature,
+        relative_humidity: raw.current.relative_humidity_2m,
+        precipitation: raw.current.precipitation,
+        weather_code: raw.current.weather_code,
+        weather: crate::wmo::decode(raw.current.weather_code).to_string(),
+        wind_speed: raw.current.wind_speed_10m,
+        wind_direction: raw.current.wind_direction_10m,
+        wind_gusts: raw.current.wind_gusts_10m,
+        cloud_cover: raw.current.cloud_cover,
+        is_day: raw.current.is_day == 1,
+    };
+
+    let daily = DailyForecast {
+        time: raw.daily.time,
+        weather_code: raw.daily.weather_code,
+        temperature_max: raw.daily.temperature_2m_max,
+        temperature_min: raw.daily.temperature_2m_min,
+        precipitation_sum: raw.daily.precipitation_sum,
+        precipitation_probability_max: raw.daily.precipitation_probability_max,
+        wind_speed_max: raw.daily.wind_speed_10m_max,
+    };
+
+    Ok(ForecastPayload {
+        latitude: raw.latitude,
+        longitude: raw.longitude,
+        elevation: raw.elevation,
+        timezone: raw.timezone,
+        current,
+        daily,
+    })
 }
