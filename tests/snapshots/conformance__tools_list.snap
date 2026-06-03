@@ -6,51 +6,8 @@ expression: shapes
   {
     "description": "Compare a period of interest against a climate baseline using calendar-window matching: returns the period aggregate, the per-year baseline distribution, and anomaly scores (absolute, percent, z-score, percentile, rank).",
     "input_schema": {
-      "$defs": {
-        "Period": {
-          "description": "A `YYYY-MM-DD` start/end window of interest (§4.3).",
-          "properties": {
-            "end": {
-              "type": "string"
-            },
-            "start": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "start",
-            "end"
-          ],
-          "type": "object"
-        },
-        "Units": {
-          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.",
-          "oneOf": [
-            {
-              "const": "metric",
-              "description": "°C · mm · km/h.",
-              "type": "string"
-            },
-            {
-              "const": "imperial",
-              "description": "°F · inch · mph.",
-              "type": "string"
-            }
-          ]
-        },
-        "Variable": {
-          "description": "The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).\n`get_forecast` is intentionally *not* limited to this set.",
-          "enum": [
-            "temperature",
-            "precipitation",
-            "snowfall",
-            "wind"
-          ],
-          "type": "string"
-        }
-      },
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "description": "`compare_period` request (§4.3).",
+      "description": "`compare_period` request (§4.3).\n\nThe period of interest is two flat top-level `YYYY-MM-DD` params (not a nested object): a\nnested struct surfaces in the published schema as a reference into a shared definitions block,\nwhich many MCP clients / LLM tool-callers don't follow (they then send `period` as a bare\nstring and serde rejects it). Flat string params match `get_historical`'s reliable\n`start_date`/`end_date`.",
       "properties": {
         "baseline_end_year": {
           "default": 2020,
@@ -92,38 +49,17 @@ expression: shapes
             "null"
           ]
         },
-        "period": {
-          "$ref": "#/$defs/Period"
+        "period_end": {
+          "description": "`YYYY-MM-DD`, the end of the window of interest, clamped per the ERA5 lag (§1.7).",
+          "type": "string"
+        },
+        "period_start": {
+          "description": "`YYYY-MM-DD`, the start of the window of interest.",
+          "type": "string"
         },
         "units": {
-          "$ref": "#/$defs/Units",
-          "default": "metric"
-        },
-        "variables": {
-          "default": [
-            "temperature",
-            "precipitation"
-          ],
-          "items": {
-            "$ref": "#/$defs/Variable"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "period"
-      ],
-      "title": "CompareRequest",
-      "type": "object"
-    },
-    "name": "compare_period"
-  },
-  {
-    "description": "Current conditions and an N-day daily forecast for a location (by name or coordinates). Returns current weather plus a chart-friendly daily series.",
-    "input_schema": {
-      "$defs": {
-        "Units": {
-          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.",
+          "default": "metric",
+          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.\n\n`#[schemars(inline)]` forces this enum's schema to be emitted at every use site rather than\nbehind a JSON-Schema reference into a shared definitions block. Many MCP clients / LLM\ntool-callers don't follow those references, so the `metric`/`imperial` choices must appear\ninline at the param — otherwise callers have to hand-quote the value blind.",
           "oneOf": [
             {
               "const": "metric",
@@ -136,8 +72,37 @@ expression: shapes
               "type": "string"
             }
           ]
+        },
+        "variables": {
+          "default": [
+            "temperature",
+            "precipitation"
+          ],
+          "items": {
+            "description": "The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).\n`get_forecast` is intentionally *not* limited to this set.\n\n`#[schemars(inline)]` for the same reason as [`Units`]: emit the enum at every use site\nrather than behind a shared schema reference, so reference-blind MCP clients still see the\nallowed values.",
+            "enum": [
+              "temperature",
+              "precipitation",
+              "snowfall",
+              "wind"
+            ],
+            "type": "string"
+          },
+          "type": "array"
         }
       },
+      "required": [
+        "period_start",
+        "period_end"
+      ],
+      "title": "CompareRequest",
+      "type": "object"
+    },
+    "name": "compare_period"
+  },
+  {
+    "description": "Current conditions and an N-day daily forecast for a location (by name or coordinates). Returns current weather plus a chart-friendly daily series.",
+    "input_schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "description": "`get_forecast` request (§2). Exactly one of `location` vs `latitude`+`longitude` (§1.1).",
       "properties": {
@@ -173,21 +138,8 @@ expression: shapes
           ]
         },
         "units": {
-          "$ref": "#/$defs/Units",
-          "default": "metric"
-        }
-      },
-      "title": "ForecastRequest",
-      "type": "object"
-    },
-    "name": "get_forecast"
-  },
-  {
-    "description": "The daily historical weather record (ERA5) for an explicit date window: temperature, precipitation, snowfall, and/or wind for the requested variables.",
-    "input_schema": {
-      "$defs": {
-        "Units": {
-          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.",
+          "default": "metric",
+          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.\n\n`#[schemars(inline)]` forces this enum's schema to be emitted at every use site rather than\nbehind a JSON-Schema reference into a shared definitions block. Many MCP clients / LLM\ntool-callers don't follow those references, so the `metric`/`imperial` choices must appear\ninline at the param — otherwise callers have to hand-quote the value blind.",
           "oneOf": [
             {
               "const": "metric",
@@ -200,18 +152,16 @@ expression: shapes
               "type": "string"
             }
           ]
-        },
-        "Variable": {
-          "description": "The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).\n`get_forecast` is intentionally *not* limited to this set.",
-          "enum": [
-            "temperature",
-            "precipitation",
-            "snowfall",
-            "wind"
-          ],
-          "type": "string"
         }
       },
+      "title": "ForecastRequest",
+      "type": "object"
+    },
+    "name": "get_forecast"
+  },
+  {
+    "description": "The daily historical weather record (ERA5) for an explicit date window: temperature, precipitation, snowfall, and/or wind for the requested variables.",
+    "input_schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "description": "`get_historical` request (§3).",
       "properties": {
@@ -247,8 +197,20 @@ expression: shapes
           "type": "string"
         },
         "units": {
-          "$ref": "#/$defs/Units",
-          "default": "metric"
+          "default": "metric",
+          "description": "The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels\nechoed in every output envelope.\n\n`#[schemars(inline)]` forces this enum's schema to be emitted at every use site rather than\nbehind a JSON-Schema reference into a shared definitions block. Many MCP clients / LLM\ntool-callers don't follow those references, so the `metric`/`imperial` choices must appear\ninline at the param — otherwise callers have to hand-quote the value blind.",
+          "oneOf": [
+            {
+              "const": "metric",
+              "description": "°C · mm · km/h.",
+              "type": "string"
+            },
+            {
+              "const": "imperial",
+              "description": "°F · inch · mph.",
+              "type": "string"
+            }
+          ]
         },
         "variables": {
           "default": [
@@ -256,7 +218,14 @@ expression: shapes
             "precipitation"
           ],
           "items": {
-            "$ref": "#/$defs/Variable"
+            "description": "The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).\n`get_forecast` is intentionally *not* limited to this set.\n\n`#[schemars(inline)]` for the same reason as [`Units`]: emit the enum at every use site\nrather than behind a shared schema reference, so reference-blind MCP clients still see the\nallowed values.",
+            "enum": [
+              "temperature",
+              "precipitation",
+              "snowfall",
+              "wind"
+            ],
+            "type": "string"
           },
           "type": "array"
         }
