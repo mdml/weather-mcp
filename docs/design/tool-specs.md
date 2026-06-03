@@ -272,10 +272,17 @@ to 1950" use case, and it's why the per-year array (not just summary stats) is i
 
 ### 4.3 Request
 
+The window of interest is supplied as **two flat top-level date params** (`period_start` /
+`period_end`), not a nested `{ start, end }` object — a nested struct surfaces in the published
+JSON Schema as a reference into a shared definitions block, which many MCP clients / LLM
+tool-callers don't follow, so they mis-send the param. Flat string params mirror
+`get_historical`'s reliable `start_date`/`end_date`.
+
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `location` *or* `latitude`+`longitude` | string / float | — | §1.1 |
-| `period` | `{ start, end }` `YYYY-MM-DD` | — | the window of interest; `end` clamped §1.7 |
+| `period_start` | `YYYY-MM-DD` | — | start of the window of interest |
+| `period_end` | `YYYY-MM-DD` | — | end of the window of interest; clamped §1.7 |
 | `variables` | enum[] | `["temperature","precipitation"]` | §1.4 |
 | `baseline_start_year` | int ≥ 1940 | `1991` | §4.1 |
 | `baseline_end_year` | int ≥ 1940 | `2020` | §4.1 |

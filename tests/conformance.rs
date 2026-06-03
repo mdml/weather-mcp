@@ -69,6 +69,26 @@ async fn tools_list_is_exactly_the_three_weather_tools() -> anyhow::Result<()> {
         "exactly the three weather tools"
     );
 
+    // Regression guard: every tool's input schema must be self-contained — no `$ref`/`$defs`
+    // indirection. Many MCP clients / LLM tool-callers don't dereference `$ref`, so a schema that
+    // hides a struct/enum behind `$defs` makes them mis-serialize the param (the `compare_period`
+    // string-vs-object bug). Inlining (`#[schemars(inline)]` + flat params) keeps this empty; a
+    // future change that reintroduces indirection fails loudly here.
+    for tool in &tools.tools {
+        let schema =
+            serde_json::to_string(&tool.input_schema).expect("input schema serializes to a string");
+        assert!(
+            !schema.contains("\"$ref\""),
+            "tool `{}` input schema must not contain `$ref` (MCP clients don't deref it): {schema}",
+            tool.name,
+        );
+        assert!(
+            !schema.contains("\"$defs\""),
+            "tool `{}` input schema must not contain `$defs` (inline the subschemas): {schema}",
+            tool.name,
+        );
+    }
+
     // Snapshot the published shape (name + description + input schema) of all three, sorted for
     // determinism. Pinning this catches accidental drift of the advertised tool contract.
     let mut shapes: Vec<Value> = tools
@@ -131,7 +151,8 @@ async fn call_compare_period_returns_success() -> anyhow::Result<()> {
         .call_tool(
             CallToolRequestParams::new("compare_period").with_arguments(args(json!({
                 "location": "Boston",
-                "period": { "start": "2026-01-01", "end": "2026-05-25" }
+                "period_start": "2026-01-01",
+                "period_end": "2026-05-25"
             }))),
         )
         .await?;

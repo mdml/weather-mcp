@@ -91,14 +91,13 @@ pub struct HistoricalRequest {
     pub units: Units,
 }
 
-/// A `YYYY-MM-DD` start/end window of interest (§4.3).
-#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
-pub struct Period {
-    pub start: String,
-    pub end: String,
-}
-
 /// `compare_period` request (§4.3).
+///
+/// The period of interest is two flat top-level `YYYY-MM-DD` params (not a nested object): a
+/// nested struct surfaces in the published schema as a reference into a shared definitions block,
+/// which many MCP clients / LLM tool-callers don't follow (they then send `period` as a bare
+/// string and serde rejects it). Flat string params match `get_historical`'s reliable
+/// `start_date`/`end_date`.
 #[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
 pub struct CompareRequest {
     #[serde(default)]
@@ -107,7 +106,10 @@ pub struct CompareRequest {
     pub latitude: Option<f64>,
     #[serde(default)]
     pub longitude: Option<f64>,
-    pub period: Period,
+    /// `YYYY-MM-DD`, the start of the window of interest.
+    pub period_start: String,
+    /// `YYYY-MM-DD`, the end of the window of interest, clamped per the ERA5 lag (§1.7).
+    pub period_end: String,
     #[serde(default = "default_variables")]
     pub variables: Vec<Variable>,
     /// ≥ 1940 (§4.1).
@@ -399,15 +401,15 @@ impl WeatherServer {
         let period_data = self
             .client
             .archive(&archive_query(
-                req.period.start.clone(),
-                req.period.end.clone(),
+                req.period_start.clone(),
+                req.period_end.clone(),
             ))
             .await?;
         let (effective_period_end, clamp_note) = match period_data.daily.time.last() {
-            Some(last) if last.as_str() < req.period.end.as_str() => {
-                clamp_end_to_archive(&req.period.end, last)
+            Some(last) if last.as_str() < req.period_end.as_str() => {
+                clamp_end_to_archive(&req.period_end, last)
             }
-            _ => (req.period.end.clone(), None),
+            _ => (req.period_end.clone(), None),
         };
 
         let baseline_data = self
@@ -416,7 +418,7 @@ impl WeatherServer {
             .await?;
 
         let spec = CompareSpec {
-            period_start: req.period.start,
+            period_start: req.period_start,
             period_end: effective_period_end,
             variables: req.variables,
             baseline_start_year: req.baseline_start_year,

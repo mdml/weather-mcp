@@ -19,9 +19,15 @@ pub type Notes = Vec<String>;
 
 /// The single `units` knob (§1.2). Maps to Open-Meteo's three unit params and to the labels
 /// echoed in every output envelope.
+///
+/// `#[schemars(inline)]` forces this enum's schema to be emitted at every use site rather than
+/// behind a JSON-Schema reference into a shared definitions block. Many MCP clients / LLM
+/// tool-callers don't follow those references, so the `metric`/`imperial` choices must appear
+/// inline at the param — otherwise callers have to hand-quote the value blind.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, schemars::JsonSchema,
 )]
+#[schemars(inline)]
 #[serde(rename_all = "lowercase")]
 pub enum Units {
     /// °C · mm · km/h.
@@ -97,7 +103,12 @@ pub enum Aggregation {
 
 /// The fixed, snapshot-testable variable enum for the historical/comparison path (§1.4).
 /// `get_forecast` is intentionally *not* limited to this set.
+///
+/// `#[schemars(inline)]` for the same reason as [`Units`]: emit the enum at every use site
+/// rather than behind a shared schema reference, so reference-blind MCP clients still see the
+/// allowed values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[schemars(inline)]
 #[serde(rename_all = "lowercase")]
 pub enum Variable {
     Temperature,
