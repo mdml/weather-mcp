@@ -4,7 +4,7 @@
 
 ## State
 
-**Phase 3 — the executable bar is green → Phase 4 next.** The Phase 0 harness landed
+**Phase 3 — the executable bar is green → Phase 3.5 (precip data source) next.** The Phase 0 harness landed
 ([#1](https://github.com/mdml/weather-mcp/pull/1)), the design specs are frozen
 ([docs/design/](../design/)), the Phase 2 red bar was authored, and now **Phase 3 has filled the
 pure logic behind the `WeatherData` seam** — landed as five file-disjoint slices (parse/error-map,
@@ -12,8 +12,13 @@ dates+location, the `compare_period` aggregation, handler wiring + conformance s
 real HTTP client + live smoke) via [#6](https://github.com/mdml/weather-mcp/pull/6)–[#10](https://github.com/mdml/weather-mcp/pull/10)
 onto an integration branch that merged green in one shot ([#11](https://github.com/mdml/weather-mcp/pull/11)).
 `just check` is **fully green** (39 passed; fmt/clippy/build/nextest incl. the four `insta`
-conformance snapshots) and `just test-live` passes **3/3 against the real Open-Meteo API**. Next is
-**Phase 4 — the MCP App views** ([0006](../decisions/0006-phased-delivery.md), [0005](../decisions/0005-hands-off-agent-development.md)).
+conformance snapshots) and `just test-live` passes **3/3 against the real Open-Meteo API**.
+Post-Phase-3 live dogfooding then landed two follow-up fixes — `"City, ST"` geocoding
+([#14](https://github.com/mdml/weather-mcp/pull/14)) and inlined/flat tool schemas for MCP-client
+compatibility ([#15](https://github.com/mdml/weather-mcp/pull/15)) — and surfaced an **ERA5
+precipitation-accuracy problem**, so next is **Phase 3.5 — a precip data-source investigation**,
+then **Phase 4 — the MCP App views**
+([0006](../decisions/0006-phased-delivery.md), [0005](../decisions/0005-hands-off-agent-development.md)).
 
 What exists now:
 
@@ -37,17 +42,21 @@ What exists now:
 **Deferred Phase-0 follow-ups** (cheap, do when needed): the Docker/Fly preview deploy and the
 lefthook/commitlint + dotenvx `just` recipes.
 
-## Next concrete step — Phase 4: the MCP App views
+## Next concrete step — Phase 3.5: precipitation data-source investigation
 
-Phase 3 is complete: the three tools are implemented behind the seam, `just check` is green, and
-the `tools/call` output shapes are pinned by the conformance snapshots — so the pure-data contract
-the app consumes ([app-spec](../design/app-spec.md)) is now frozen *and exercised*.
+A live `compare_period` dogfood exposed a data-quality problem: **ERA5 precipitation (Open-Meteo)
+diverges sharply from station gauges.** Baltimore's last 12 months read **98% of normal** where the
+gauge record (Capital Weather Gang / BWI) shows a **72%-of-normal drought** — the tool is *correct*;
+the *source* is wrong for point/recent/drought precip (ERA5 precip is model-derived + grid-averaged
+~28 km; the finer ERA5-Land lags months behind → nulls for recent dates; Open-Meteo serves no gauge
+product). ERA5 stays fine for temperature and the multi-decade long view.
 
-Phase 4 builds the **MCP App** forecast + trend views against that frozen output. It is **gated on
-an empirical check, resolved in-phase, not on paper**: does CCD render an MCP App inline? (see
-[Decisions still open](#decisions-still-open) and
-[roadmap.md § Open questions](roadmap.md#open-questions)). Settle that render check first, then
-build the views.
+**Phase 3.5 is research, not code:** evaluate gauge-based precip sources — NOAA **ACIS** (what CWG
+uses; US-only, keyless), **NLDAS**, and a global gauge/satellite blend (**IMERG**/**CHIRPS**) to keep
+global coverage — verify accuracy vs CWG for a few cities, and produce a recommendation + scope + an
+[ADR-0001](../decisions/0001-data-source-open-meteo.md) amendment **before** any code. Then **Phase 4
+— the MCP App views** builds on a precip source we trust (gated on the CCD inline-render check; see
+[Decisions still open](#decisions-still-open)).
 
 ## Decisions still open
 
